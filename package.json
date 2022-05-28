@@ -1,0 +1,27 @@
+{
+  "name": "html-game-canvas",
+  "version": "0.0.1",
+  "description": "HTML canvas tools to build a game or interactive UI with this helper",
+  "main": "index.js",
+  "scripts": {
+    "bundle": "webpack",
+    "serve": "webpack serve --port 9997"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alkaline-nine/html-game-canvas.git"
+  },
+  "author": "alkaline-nine",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "babel-loader": "^8.2.3",
+    "html-loader": "^3.0.1",
+    "html-webpack-plugin": "^5.5.0",
+    "terser-webpack-plugin": "^5.2.5",
+    "webpack": "^5.64.2",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.5.0"
+  }
+}
