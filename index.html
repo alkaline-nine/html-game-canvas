@@ -61,46 +61,46 @@
 			 * Simple example of game layer init on to the otherwise empty canvas
 			 */
 			const initLayers = () => {
-					// override the canvas config if desired
-					// ...width/height changes take effect once upon startGame()
-					const width = gameApi.config().canvas.width = 800;
-					const height = gameApi.config().canvas.height = 480;
-					console.log("Width/Height for game canvas engine = " + width + ":" + height);
+				// override the canvas config if desired
+				// ...width/height changes take effect once upon startGame()
+				const width = gameApi.config().canvas.width = 1333;
+				const height = gameApi.config().canvas.height = 720;
+				console.log("Width/Height for game canvas engine = " + width + ":" + height);
 
-					// then add a bunch of objects (layers) with data, think(), and render()
-					const totalToAdd = 400;
-					for (i=0; i<totalToAdd; i++) {
-						// layers need to provide think and render if desierd to be used
-						// ...and any data provided will be stored in the layer and provided each cycle
-						const layer = {
-							think: thinkLayer,
-							render: renderLayer,
-							data: { 
-								// help track obj when think() or render() is called
-								id: i,
-								// position x,y of obj for render() cycle
-								posX: i,
-								posY: i,
-								// width/height of obj for render() randomized
-								sizeX: gameApi.random(50) + 10,
-								sizeY: gameApi.random(50) + 10,
-								// step +/- position x/y for think() cycle
-								moveX: 1 + (i % 7),
-								moveY: 1 + (i % 7),
-								// define min/max x/y absolute canvas positions for bounds control
-								minX: 0,
-								maxX: width,
-								minY: 0,
-								maxY: height,
-								// hold a color for render()
-								color: 'blue',
-								// ability to auto remove obj from game API based on cycle count
-								expires: gameApi.random(2100) + 1,
-							}
-						};
-						gameApi.addLayer(layer);
-						console.log("Adding object to html game canvas engine");
-					}
+				// then add a bunch of objects (layers) with data, think(), and render()
+				const totalToAdd = 400;
+				for (i=0; i<totalToAdd; i++) {
+					// layers need to provide think and render if desierd to be used
+					// ...and any data provided will be stored in the layer and provided each cycle
+					const layer = {
+						think: thinkLayer,
+						render: renderLayer,
+						data: { 
+							// help track obj when think() or render() is called
+							id: i,
+							// position x,y of obj for render() cycle
+							posX: i,
+							posY: i,
+							// width/height of obj for render() randomized
+							sizeX: gameApi.random(50) + 10,
+							sizeY: gameApi.random(50) + 10,
+							// step +/- position x/y for think() cycle
+							moveX: ((1 + i) % 7),
+							moveY: ((4 + i) % 7),
+							// define min/max x/y absolute canvas positions for bounds control
+							minX: 0,
+							maxX: width,
+							minY: 0,
+							maxY: height,
+							// hold a color for render()
+							color: 'blue',
+							// ability to auto remove obj from game API based on cycle count
+							expires: gameApi.random(2100) + 1,
+						}
+					};
+					gameApi.addLayer(layer);
+					console.log("Adding object to html game canvas engine");
+				}
 			}
 
 			/*
@@ -191,52 +191,59 @@
 				// for some variety, draw one of rect | circle | triangle | hexagon
 				switch (data.id % 4) {
 					case 0:
-						ctx.fillRect( //
-							data.posX, //
-							data.posY, //
-							data.sizeX, //
-							data.sizeY //
-						);
+						gameApi.drawUtil({ 
+							type: 'rect', 
+							c: data.color,
+							x: data.posX, 
+							y: data.posY, 
+							dx: data.sizeX, 
+							dy: data.sizeY,
+						});
 						break;
 					case 1:
-						ctx.beginPath();
-						ctx.ellipse( //
-							data.posX + midX, //
-							data.posY + midY, //
-							midX, //
-							midY, //
-							0, 0, //
-							Math.PI * 2);
-						ctx.closePath();
-						ctx.fill();
+						gameApi.drawUtil({ 
+							type: 'ellipse', 
+							c: data.color,
+							x: data.posX, 
+							y: data.posY, 
+							mx: midX, 
+							my: midY,
+						});
 						break;
 					case 2:
-						ctx.beginPath();
+						let trianglePath = [];
 						if (midX > midY) {
-							ctx.moveTo(data.posX, data.posY);
-							ctx.lineTo(data.posX + data.sizeX, data.posY);
-							ctx.lineTo(data.posX + midX, data.posY + data.sizeY);
-							ctx.lineTo(data.posX, data.posY);
+							trianglePath = [
+								{ x: data.posX, y: data.posY },
+								{ x: data.posX + data.sizeX, y: data.posY },
+								{ x: data.posX + midX, y: data.posY + data.sizeY }
+							];
 						} else {
-							ctx.moveTo(data.posX, data.posY + data.sizeY);
-							ctx.lineTo(data.posX + data.sizeX, data.posY + data.sizeY);
-							ctx.lineTo(data.posX + midX, data.posY);
-							ctx.lineTo(data.posX, data.posY + data.sizeY);
+							trianglePath = [
+								{ x: data.posX, y: data.posY + data.sizeY },
+								{ x: data.posX + data.sizeX, y: data.posY + data.sizeY },
+								{ x: data.posX + midX, y: data.posY }
+							];
 						}
-						ctx.closePath();
-						ctx.fill();
+						gameApi.drawUtil({
+							type: 'path',
+							c: data.color,
+							path: trianglePath
+						});
 						break;
 					case 3:
-						ctx.beginPath();
-						ctx.moveTo(data.posX + thirdX, data.posY);
-						ctx.lineTo(data.posX + data.sizeX - thirdX, data.posY);
-						ctx.lineTo(data.posX + data.sizeX, data.posY + midY);
-						ctx.lineTo(data.posX + data.sizeX - thirdX, data.posY + data.sizeY);
-						ctx.lineTo(data.posX + thirdX, data.posY + data.sizeY);
-						ctx.lineTo(data.posX, data.posY + midY);
-						ctx.lineTo(data.posX + thirdX, data.posY);
-						ctx.closePath();
-						ctx.fill();
+						gameApi.drawUtil({
+							type: 'path',
+							c: data.color,
+							path: [
+								{ x: data.posX + thirdX, y: data.posY },
+								{ x: data.posX + data.sizeX - thirdX, y: data.posY },
+								{ x: data.posX + data.sizeX, y: data.posY + midY },
+								{ x: data.posX + data.sizeX - thirdX, y: data.posY + data.sizeY },
+								{ x: data.posX + thirdX, y: data.posY + data.sizeY },
+								{ x: data.posX, y: data.posY + midY }
+							]
+						});
 						break;
 				}
 			}

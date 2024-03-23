@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "bundle": "webpack",
-    "serve": "webpack serve --port 9997"
+    "serve": "webpack serve --port 9998"
   },
   "repository": {
     "type": "git",

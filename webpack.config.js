@@ -10,6 +10,7 @@ module.exports = {
     layers: './app/layers.js',
     gamer: './app/gamer.js',
     marsaglia: './app/marsaglia.js',
+    utils: './app/utils.js',
     htmlGameCanvas: './app/index.js',
   },
   output: {

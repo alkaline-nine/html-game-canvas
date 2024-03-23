@@ -9,6 +9,7 @@ import Configuration from './configuration.js';
 import MarsagliaRandom from './marsaglia.js';
 import KeyInput from './keyinput.js';
 import Layers from './layers.js';
+import Utils from './utils.js';
 import Gamer from './gamer.js';
 
 var gameCanvas = {
@@ -18,6 +19,7 @@ var gameCanvas = {
 		input: undefined,
 		layers: undefined,
 		game: undefined,
+		utils: undefined,
 	},
 	api: {
 		// game engine (think,render,increment,repeat) can be started/stopped
@@ -33,6 +35,7 @@ var gameCanvas = {
 		// setup keys to listen on, and a callback when input is collected
 		keys: (k) => { return gameCanvas.core.input.setKeys(k); },
 		inputCallback: (callback) => { gameCanvas.core.input.setCallback(callback); },
+		drawUtil: (opts) => { gameCanvas.core.utils.draw(opts); },
 	}
 };
 
@@ -59,6 +62,10 @@ var gameCanvas = {
 	console.log('Layers: Loading layers');
 	var layers = gameCanvas.core.layers = new Layers(config);
 	console.log(`Layers: ${JSON.stringify(layers.data, null, 2)}\n\n`);
+
+	console.log('Utils: Loading utils');
+	var utils = gameCanvas.core.utils = new Utils(renderCanvas, config);
+	console.log(`Utils: ${JSON.stringify(utils.config, null, 2)}\n\n`);
 
 	console.log('Gamer: Loading game controller');
 	var game = gameCanvas.core.game = new Gamer(config, input, layers, renderCanvas);
