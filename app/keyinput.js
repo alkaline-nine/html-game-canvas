@@ -15,7 +15,7 @@ function KeyInput(config) {
 	this.handleKeys = (event) => {
 		// if keys configured, and matching key pressed
 		if (this.config.input.keys.length > 0) {
-			console.log('KeyInput: checking event=' + event);
+			console.log('KeyInput: checking event for key=' + event.keyCode);
 			if (this.config.input.keys.some(k => k === event.keyCode)) {
 				console.log('KeyInput: handling key=' + event.keyCode);
 				this.inputs.push(event.keyCode);

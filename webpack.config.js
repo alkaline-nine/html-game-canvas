@@ -1,9 +1,11 @@
 const path = require('path');
+const CopyPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
   mode: 'production',
+  // the game engine will be bundled as a single JS with webpack
   entry: {
     configuration: './app/configuration.js',
     keyinput: './app/keyinput.js',
@@ -36,6 +38,12 @@ module.exports = {
     ]
   },
   plugins: [
+    // the sampleGames JS file(s) will be copied to static folder as is without bundling
+    new CopyPlugin({
+      patterns: [
+        { from: "sampleGames/", to: "static/" },
+      ],
+    }),
     new HtmlWebpackPlugin({
       cache: false,
       template: 'index.html',

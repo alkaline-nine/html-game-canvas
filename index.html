@@ -3,7 +3,11 @@
 	<head>
 		<meta charset="utf-8"/>
 		<title>HTML Game Canvas</title>
-		<!-- webpack will inject JS here -->
+
+		<!-- Include the JS for the static sample game using the game engine -->
+		<script type="text/javascript" src="static/sampleGame.js"></script>
+
+		<!-- webpack will inject game engine JS here -->
 	</head>
 	<body>
 		<div class="container">
@@ -14,237 +18,26 @@
 		</div>
 		<script type="text/javascript">
 			/* 
-			 * Placeholder for the game API object initialized on load
+			 * Placeholder for the sample game and game API objects initialized on load
 			 */
 			let gameApi = undefined;
+			let game = undefined;
 
 			/*
-			 * On load, configure our gameCanvas layers and start
+			 * On load, configure our gameCanvas and start
 			 */
 			window.onload = (event) => {
 				if (window.gameCanvas) {
 					// the api is all that is needed to config/run
 					gameApi = window.gameCanvas.api;
-					// add custom keyboard controls
-					initControls();
-					// add custom layer data
-					initLayers();
+					// init the game with the gameApi
+					game = window.sampleGame;
+					game.init(gameApi);
 					// start the canvas engine
 					gameApi.startGame();
 					console.log("Started html game canvas engine");
 				} else {
 					console.log("Failed to load html game canvas engine");
-				}
-			}
-
-			/* 
-			 * Some example keys to handle by keyCode
-			 */
-			const keyLeft = 37;
-			const keyUp = 38;
-			const keyRight = 39;
-			const keyDown = 40;
-
-			/* 
-			 * Simple example of game control init with some typical arrow key codes
-			 */
-			const initControls = () => {
-				// setup handling for key presses by numeric value in array format
-				// ...set keys to monitor by passing array of keyCodes (numbers)
-				gameApi.keys([keyUp, keyDown, keyLeft, keyRight]);
-				// ...and a callback function that will fire every cycle for new input
-				gameApi.inputCallback(handleKeypress);
-				console.log("Setup controls for game canvas engine = " + JSON.stringify(gameApi.config().input.keys));
-			}
-
-			/* 
-			 * Simple example of game layer init on to the otherwise empty canvas
-			 */
-			const initLayers = () => {
-				// override the canvas config if desired
-				// ...width/height changes take effect once upon startGame()
-				const width = gameApi.config().canvas.width = 1333;
-				const height = gameApi.config().canvas.height = 720;
-				console.log("Width/Height for game canvas engine = " + width + ":" + height);
-
-				// then add a bunch of objects (layers) with data, think(), and render()
-				const totalToAdd = 400;
-				for (i=0; i<totalToAdd; i++) {
-					// layers need to provide think and render if desierd to be used
-					// ...and any data provided will be stored in the layer and provided each cycle
-					const layer = {
-						think: thinkLayer,
-						render: renderLayer,
-						data: { 
-							// help track obj when think() or render() is called
-							id: i,
-							// position x,y of obj for render() cycle
-							posX: i,
-							posY: i,
-							// width/height of obj for render() randomized
-							sizeX: gameApi.random(50) + 10,
-							sizeY: gameApi.random(50) + 10,
-							// step +/- position x/y for think() cycle
-							moveX: ((1 + i) % 7),
-							moveY: ((4 + i) % 7),
-							// define min/max x/y absolute canvas positions for bounds control
-							minX: 0,
-							maxX: width,
-							minY: 0,
-							maxY: height,
-							// hold a color for render()
-							color: 'blue',
-							// ability to auto remove obj from game API based on cycle count
-							expires: gameApi.random(2100) + 1,
-						}
-					};
-					gameApi.addLayer(layer);
-					console.log("Adding object to html game canvas engine");
-				}
-			}
-
-			/*
-			 * Simple example of an inputCallback function to handle keys array
-			 * @param keys (array of numbers) representing sequential keypresses by keyCode
-			 */
-			const handleKeypress = (keys) => {
-				// just check first key in list for brevity, but depending on speed, could be multiple
-				const keypress = keys.at(0) || -1;
-				console.log("Handling keypress: " + keypress);
-				if (keypress === keyUp) {
-					// frame mode
-					console.log('keypress: renderCycleType = frame');
-					gameApi.config().canvas.renderCycleType = 'frame';
-				} else if (keypress === keyDown) {
-					// timer mode
-					console.log('keypress: renderCycleType = timer');
-					gameApi.config().canvas.renderCycleType = 'timer';
-				} else if (keypress === keyRight) {
-					// start if not already
-					if (gameApi.config().active === false) {
-						console.log('keypress: startGame');
-						gameApi.startGame();
-					}
-				} else if (keypress === keyLeft) {
-					// stop if not already
-					if (gameApi.config().active === true) {
-						console.log('keypress: stopGame');
-						gameApi.stopGame();
-					}
-				}
-				console.log("Handled keypress: " + keypress);
-			}
-
-			/* 
-			 * Simple example of using the data stored in the game canvas to "think" for each obj each cycle
-			 * @param idx (number) in the layer stack, used in removeLayer(idx)
-			 * @param count (number) of cycles since last reset via startGame()
-			 * @param data (obj) layer.data as added in addLayer(layer)
-			 */
-			const thinkLayer = (idx, count, data) => {
-				// update X data
-				data.posX += data.moveX;
-				if (data.posX + data.sizeX >= data.maxX) {
-					data.posX = data.maxX - data.sizeX;
-					data.moveX *= -1;
-					data.color = 'blue';
-				} else if (data.posX <= data.minX) {
-					data.posX = data.minX;
-					data.moveX *= -1;
-					data.color = 'green';
-				}
-				// update Y data
-				data.posY += data.moveY;
-				if (data.posY + data.sizeY >= data.maxY) {
-					data.posY = data.maxY - data.sizeY;
-					data.moveY *= -1;
-					data.color = 'red';
-				} else if (data.posY <= data.minY) {
-					data.posY = data.minY;
-					data.moveY *= -1;
-					data.color = 'white';
-				}
-				// if this object has reached its expiration, remove it
-				if (data.expires > 0 && data.expires < count) {
-					//console.log("Auto-remove layer idx=" + idx + " id=" + data.id + " expires=" + data.expires);
-					gameApi.removeLayer(idx);
-				}
-				// hard stop after xx cycles for testing
-				if (count > 2000) {
-					gameApi.stopGame();
-				}
-			}
-
-			/*
-			 * Simple example of using the data stored in the game canvas to "render" each obj each cycle
-			 * @param idx (number) in the layer stack
-			 * @param count (number) of cycles since last reset via startGame()
-			 * @param data (obj) layer.data as added in addLayer(layer)
-			 * @param ctx (canvas 2D context) to perform actual rendering
-			 */
-			const renderLayer = (idx, count, data, ctx) => {
-				ctx.fillStyle = data.color;
-				const midX = data.sizeX / 2;
-				const midY = data.sizeY / 2;
-				const thirdX = data.sizeX / 3;
-				const thirdY = data.sizeY / 3;
-				// for some variety, draw one of rect | circle | triangle | hexagon
-				switch (data.id % 4) {
-					case 0:
-						gameApi.drawUtil({ 
-							type: 'rect', 
-							c: data.color,
-							x: data.posX, 
-							y: data.posY, 
-							dx: data.sizeX, 
-							dy: data.sizeY,
-						});
-						break;
-					case 1:
-						gameApi.drawUtil({ 
-							type: 'ellipse', 
-							c: data.color,
-							x: data.posX, 
-							y: data.posY, 
-							mx: midX, 
-							my: midY,
-						});
-						break;
-					case 2:
-						let trianglePath = [];
-						if (midX > midY) {
-							trianglePath = [
-								{ x: data.posX, y: data.posY },
-								{ x: data.posX + data.sizeX, y: data.posY },
-								{ x: data.posX + midX, y: data.posY + data.sizeY }
-							];
-						} else {
-							trianglePath = [
-								{ x: data.posX, y: data.posY + data.sizeY },
-								{ x: data.posX + data.sizeX, y: data.posY + data.sizeY },
-								{ x: data.posX + midX, y: data.posY }
-							];
-						}
-						gameApi.drawUtil({
-							type: 'path',
-							c: data.color,
-							path: trianglePath
-						});
-						break;
-					case 3:
-						gameApi.drawUtil({
-							type: 'path',
-							c: data.color,
-							path: [
-								{ x: data.posX + thirdX, y: data.posY },
-								{ x: data.posX + data.sizeX - thirdX, y: data.posY },
-								{ x: data.posX + data.sizeX, y: data.posY + midY },
-								{ x: data.posX + data.sizeX - thirdX, y: data.posY + data.sizeY },
-								{ x: data.posX + thirdX, y: data.posY + data.sizeY },
-								{ x: data.posX, y: data.posY + midY }
-							]
-						});
-						break;
 				}
 			}
 		</script>
