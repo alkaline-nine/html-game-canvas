@@ -5,7 +5,7 @@
 		<title>HTML Game Canvas</title>
 
 		<!-- Include the JS for the static sample game using the game engine -->
-		<script type="text/javascript" src="static/sampleGame.js"></script>
+		<script type="text/javascript" src="static/fallingBlocks.js"></script>
 
 		<!-- webpack will inject game engine JS here -->
 	</head>
@@ -31,7 +31,7 @@
 					// the api is all that is needed to config/run
 					gameApi = window.gameCanvas.api;
 					// init the game with the gameApi
-					game = window.sampleGame;
+					game = window.fallingBlocks;
 					game.init(gameApi);
 					// start the canvas engine
 					gameApi.startGame();
