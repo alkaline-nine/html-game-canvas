@@ -39,7 +39,7 @@
 			rows: 20,
 			blockSize: 33,
 			timer: 40,
-			count: 1000000
+			//count: 1000000
 		},
 		colors: [
 			'blue',
@@ -50,6 +50,7 @@
 			'cyan',
 			'darkgrey',
 		],
+		gameOver: false,
 		keysPressed: [],
 		all: [],
 		curr: undefined
@@ -90,52 +91,64 @@
 			data: this.gameData
 		};
 		this.gameApi.addLayer(layer);
-		console.log("Adding object to html game canvas engine");
+		console.log("Added object to html game canvas engine");
 	}
 
 	/*
-	 * Simple example of an inputCallback function to handle keys array
-	 * @param keys (array of numbers) representing sequential keypresses by keyCode
+	 * Reset all data and gameOver flag
+	 */
+	this.resetGameOver = () => {
+		this.gameData.gameOver = false;
+		this.gameData.curr = undefined;
+		this.gameData.all = [];
+	}
+
+	/*
+	 * Handle inputCallback to start/stop, or push to keysPressed for think time handling
 	 */
 	this.handleKeypress = (keys) => {
 		const keypress = keys.at(0) || -1;
 		if (keypress === this.keyEsc) {
 			// stop
-			console.log('keypress: active = false');
 			this.gameData.active = false;
 			this.gameApi.stopGame();
 		} else if (keypress === this.keyEnter) {
 			// start
-			console.log('keypress: active = true');
+			if (this.gameData.gameOver) {
+				this.resetGameOver();
+			}
 			this.gameData.active = true;
 			this.gameApi.startGame();
 		} else {
 			this.gameData.keysPressed.push(keypress);
-			console.log("keypress: queue =", this.gameData.keysPressed);
 		}
-		console.log("Handled keypress: " + keypress);
 	}
 
+	/*
+	 * Helper to handle directional movement of current block
+	 */
 	this.handleKeypressMovement = (keypress, data) => {
-		console.log("Handling keypress: " + keypress);
+		//console.log("Handling keypress: " + keypress);
 		if (data && data.curr) {
 			if (keypress === this.keyUp) {
-				// TODO: rotate
+				// TODO: rotate... for now actually move block up
 				data.curr.py = data.curr.py - 1;
-				console.log('keypress: UP = ROTATE');
 			} else if (keypress === this.keyDown) {
 				data.curr.timer = 0;
-				console.log('keypress: DOWN = FAST DROP');
 			} else if (keypress === this.keyLeft) {
-				if (data.curr.px > 0) {
-					data.curr.px = data.curr.px - 1;
+				const nextPx = data.curr.px - 1;
+				if (checkBounds(nextPx, data.curr.py, data.all)) {
+					console.log('keypress: CANNOT move left, another block or boundary in the way');
+				} else {
+					data.curr.px = nextPx;
 				}
-				console.log('keypress: LEFT = MOVE LEFT');
 			} else if (keypress === this.keyRight) {
-				if (data.curr.px < data.conf.cols - 1) {
-					data.curr.px = data.curr.px + 1;
+				const nextPx = data.curr.px + 1;
+				if (checkBounds(nextPx, data.curr.py, data.all)) {
+					console.log('keypress: CANNOT move right, another block or boundary in the way');
+				} else {
+					data.curr.px = nextPx;
 				}
-				console.log('keypress: RIGHT = MOVE RIGHT');
 			} else {
 				console.log("keypress: UNKNOWN ", keypress);
 			}
@@ -143,58 +156,68 @@
 	}
 
 	/* 
-	 * Simple example of using the data stored in the game canvas to "think" for each obj each cycle
-	 * @param idx (number) in the layer stack, used in removeLayer(idx)
-	 * @param count (number) of cycles since last reset via startGame()
-	 * @param data (obj) layer.data as added in addLayer(layer)
+	 * Think on the current block 
+	 * ...first handling input
+	 * ...then seeing if its time to auto-fall (or just decrement wait counter)
+	 * ...and doing bounds checks after movement
 	 */
 	this.thinkLayer = (idx, count, data) => {
-		//console.log('thinking layer idx=', idx);
-		// check pending keypress
+		// stop game engine when gameover
+		if (data.gameOver) {
+			data.active = false;
+			this.gameApi.stopGame();
+			return;
+		}
+		// check pending keypress, handle all, then clear
 		if (this.gameData.keysPressed.length > 0) {
-			//console.log("Thinking keypress: HANDLING ", this.gameData.keysPressed.length);
 			this.gameData.keysPressed.forEach(k => this.handleKeypressMovement(k, data));
 			this.gameData.keysPressed = [];
 		}
 		// when we don't have curr data, add new one randomly
 		if (!data.curr) {
-			//console.log("Adding new curr");
 			data.curr = this.newBlock();
 		}
 		// then decide if curr is ready to move
 		if (data.curr.timer <= 0) {
-			//console.log("Checking curr movable");
-			// if curr has hit a boundary. lock it
-			if (this.checkBounds(data.curr, data.all) === false) {
-				//console.log("Moving curr");
-				data.curr.py = data.curr.py + 1;
+			// if auto-fall of curr is not hitting a boundary or other block, update curr position
+			const nextPy = data.curr.py + 1;
+			if (this.checkBounds(data.curr.px, nextPy, data.all) === false) {
+				// auto-fall
+				data.curr.py = nextPy;
 				data.curr.timer = this.gameData.conf.timer;
-			}
-			if (this.checkBounds(data.curr, data.all) === true) {
-				//console.log("Lock curr");
-				data.all.push(data.curr);
-				data.curr = undefined;
+			} else {
+				// auto-fall would violate bounds, locked at current position
+				// ...additional check to see if we're still at starting position, which is game over
+				const { px, py } = this.startingPosition();
+				if ( px === data.curr.px && py === data.curr.py) {
+					console.log('locked in starting startingPosition, game over');
+					data.gameOver = true;
+				} else {
+					data.all.push(data.curr);
+					data.curr = undefined;
+				}
 			}
 		} else {
 			// always decrement curr timer
-			//console.log("Timer curr=" + data.curr.timer);
 			data.curr.timer--;
-			// hard stop after xx cycles for testing
-			if (count > this.gameData.conf.count) {
-				console.log("Hard Stop");
-				this.gameApi.stopGame();
-			}
 		}
 	}
 
-	this.checkBounds = (block, all) => {
-		const cx = block.px;
-		const cy = block.py + 1;
-		if (cy >= this.gameData.conf.rows) {
+	/*
+	 * This will return true when x,y is overlapping another block or boundary
+	 */
+	this.checkBounds = (px, py, all) => {
+		// check x,y against bounds of board
+		if (py < 0 ||
+			py >= this.gameData.conf.rows ||
+			px < 0 ||
+			px >= this.gameData.conf.cols
+		) {
 			return true;
 		}
+		// check x,y against all other blocks
 		if (Array.isArray(all)) {
-			const hit = all.filter((lb) => lb.py === cy && lb.px === cx);
+			const hit = all.filter((b) => b.py === py && b.px === px);
 			return hit.length > 0;
 		}
 		return false;
@@ -204,11 +227,20 @@
 		return this.gameData.colors[this.gameApi.random(this.gameData.colors.length)];
 	}
 
+	this.startingPosition = () => {
+		return { 
+			px: this.gameData.conf.cols/2 - 1, 
+			py: 0
+		}; 
+	}
+
 	this.newBlock = () => {
+		const { px, py } = this.startingPosition();
+		const color = this.newColor();
 		return {
-			py: 0,
-			px: this.gameData.conf.cols/2 - 1,
-			color: this.newColor(),
+			px,
+			py,
+			color,
 			timer: this.gameData.conf.timer
 		};
 	}
@@ -218,22 +250,33 @@
 		this.gameApi.drawUtil({ 
 			type: 'rect', 
 			c: block.color,
-			x: block.px *  + blockSize, 
-			y: block.py *  + blockSize, 
+			x: block.px * blockSize, 
+			y: block.py * blockSize, 
 			dx: blockSize, 
 			dy: blockSize
 		});
 	}
 
+	this.renderBackground = (ctx, conf, color) => {
+		// draw a different color background
+		this.gameApi.drawUtil({ 
+			type: 'rect', 
+			c: color,
+			x: 0, 
+			y: 0, 
+			dx: conf.cols * conf.blockSize, 
+			dy: conf.rows * conf.blockSize
+		});
+	}
+
 	/*
-	 * Simple example of using the data stored in the game canvas to "render" each obj each cycle
-	 * @param idx (number) in the layer stack
-	 * @param count (number) of cycles since last reset via startGame()
-	 * @param data (obj) layer.data as added in addLayer(layer)
-	 * @param ctx (canvas 2D context) to perform actual rendering
+	 * Render each cycle
 	 */
 	this.renderLayer = (idx, count, data, ctx) => {
 		//console.log('rendering layer idx=', idx);
+		if (data.gameOver) {
+			this.renderBackground(ctx, data.conf, 'darkred');
+		}
 		data.all.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
 		if (data.curr) {
 			this.renderBlock(ctx, data.curr, data.conf.blockSize);
