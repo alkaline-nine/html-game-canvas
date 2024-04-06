@@ -50,6 +50,44 @@
 			'cyan',
 			'darkgrey',
 		],
+		shapes: {
+			'line': [
+				[0,-1,0,0,0,1,0,2],
+				[-2,0,-1,0,0,0,1,0],
+				[0,-1,0,0,0,1,0,2],
+				[-2,0,-1,0,0,0,1,0]
+			],
+			'square': [
+				[-1,-1,-1,0,0,-1,0,0],
+				[-1,-1,-1,0,0,-1,0,0],
+				[-1,-1,-1,0,0,-1,0,0],
+				[-1,-1,-1,0,0,-1,0,0]
+			],
+			'left_l': [
+				[0,-1,0,0,0,1,1,1],
+				[-1,1,-1,0,0,0,1,0],
+				[-1,-1,0,-1,0,0,0,1],
+				[-1,0,0,0,1,0,1,-1]
+			],
+			'right_l': [
+				[-1,1,0,1,0,0,0,-1],
+				[-1,-1,-1,0,0,0,1,0],
+				[1,-1,0,-1,0,0,0,1],
+				[-1,0,0,0,1,0,1,1]
+			],
+			'left_z': [
+				[0,-1,0,0,1,0,1,1],
+				[-1,1,0,1,0,0,1,0],
+				[0,-1,0,0,1,0,1,1],
+				[-1,1,0,1,0,0,1,0]
+			],
+			'right_z': [
+				[1,-1,1,0,0,0,0,1],
+				[-1,-1,0,-1,0,0,1,0],
+				[1,-1,1,0,0,0,0,1],
+				[-1,-1,0,-1,0,0,1,0]
+			]
+		},
 		gameOver: false,
 		keysPressed: [],
 		all: [],
@@ -131,20 +169,24 @@
 		//console.log("Handling keypress: " + keypress);
 		if (data && data.curr) {
 			if (keypress === this.keyUp) {
-				// TODO: rotate... for now actually move block up
-				data.curr.py = data.curr.py - 1;
+				const nextOrientation = data.curr.orientation + 1 % 4;
+				if (this.checkShapeBounds({ ...data.curr, orientation: nextOrientation}, data.all)) {
+					console.log('keypress: CANNOT move left, another block or boundary in the way');
+				} else {
+					data.curr.orientation = nextOrientation;
+				}
 			} else if (keypress === this.keyDown) {
 				data.curr.timer = 0;
 			} else if (keypress === this.keyLeft) {
 				const nextPx = data.curr.px - 1;
-				if (checkBounds(nextPx, data.curr.py, data.all)) {
+				if (this.checkShapeBounds({ ...data.curr, px: nextPx}, data.all)) {
 					console.log('keypress: CANNOT move left, another block or boundary in the way');
 				} else {
 					data.curr.px = nextPx;
 				}
 			} else if (keypress === this.keyRight) {
 				const nextPx = data.curr.px + 1;
-				if (checkBounds(nextPx, data.curr.py, data.all)) {
+				if (this.checkShapeBounds({ ...data.curr, px: nextPx}, data.all)) {
 					console.log('keypress: CANNOT move right, another block or boundary in the way');
 				} else {
 					data.curr.px = nextPx;
@@ -173,34 +215,65 @@
 			this.gameData.keysPressed.forEach(k => this.handleKeypressMovement(k, data));
 			this.gameData.keysPressed = [];
 		}
+		// TODO: check for data.all blocks that have a counter and decrement/remove/shift as needed
 		// when we don't have curr data, add new one randomly
 		if (!data.curr) {
 			data.curr = this.newBlock();
 		}
-		// then decide if curr is ready to move
-		if (data.curr.timer <= 0) {
-			// if auto-fall of curr is not hitting a boundary or other block, update curr position
-			const nextPy = data.curr.py + 1;
-			if (this.checkBounds(data.curr.px, nextPy, data.all) === false) {
-				// auto-fall
-				data.curr.py = nextPy;
-				data.curr.timer = this.gameData.conf.timer;
-			} else {
-				// auto-fall would violate bounds, locked at current position
-				// ...additional check to see if we're still at starting position, which is game over
-				const { px, py } = this.startingPosition();
-				if ( px === data.curr.px && py === data.curr.py) {
-					console.log('locked in starting startingPosition, game over');
-					data.gameOver = true;
-				} else {
-					data.all.push(data.curr);
-					data.curr = undefined;
-				}
-			}
-		} else {
-			// always decrement curr timer
-			data.curr.timer--;
+		// decrement curr timer and see if its ready to auto-fall...
+		if (data.curr.timer-- <= 0) {
+			this.handleAutoFallTimer(data);
 		}
+	}
+
+	/*
+	 * This will handle checking if the auto-fall would cause a collision.
+	 * Then either let the shape fall by one position, or lock it in to pre-fall position and create new.
+	 */
+	this.handleAutoFallTimer = (data) => {
+		const nextPy = data.curr.py + 1;
+		// check fall position for collisions
+		if (this.checkShapeBounds({ ...data.curr, py: nextPy}, data.all) == false) {
+			// auto-fall
+			data.curr.py = nextPy;
+			data.curr.timer = this.gameData.conf.timer;
+		} else {
+			// auto-fall would violate bounds, lock at current position
+			const { px, py } = this.startingPosition();
+			// check to see if we're still at starting position, which is game over
+			if (px === data.curr.px && py === data.curr.py) {
+				console.log('locked in starting startingPosition, game over');
+				data.gameOver = true;
+			} else {
+				this.lockShape(data);
+				this.checkCompleteLines(data);
+				data.curr = this.newBlock();
+			}
+		}
+	}
+
+	/*
+	 * This will handle identifying locked block rows that are "complete" and ready to mark for removal
+	 */
+	this.checkCompleteLines = (data) => {
+		// TODO: check for new lines to be cleared based on this lock of shape blocks
+		// TODO: determine how to mark the data.all entries to have different styling and display for a moment before clearing/falling
+	}
+
+	/*
+	 * This will return true when any block within the current shape is overlapping another block or boundary
+	 */
+	this.checkShapeBounds = (block, all) => {
+		const shape = this.gameData.shapes[`${block.shape}`];
+		const xys = shape[block.orientation % shape.length];
+		const color = block.color;
+		let shapeBounds = false;
+		for (skip = 0; skip < 8 && !shapeBounds; skip += 2) {
+			let px = block.px + xys[0 + skip];
+			let py = block.py + xys[1 + skip];
+			shapeBounds = checkBounds(px, py, all);
+		}
+		return shapeBounds;
 	}
 
 	/*
@@ -208,7 +281,7 @@
 	 */
 	this.checkBounds = (px, py, all) => {
 		// check x,y against bounds of board
-		if (py < 0 ||
+		if (
 			py >= this.gameData.conf.rows ||
 			px < 0 ||
 			px >= this.gameData.conf.cols
@@ -223,8 +296,29 @@
 		return false;
 	}
 
+	this.lockShape = (data) => {
+		// each piece of the shape gets its own block
+		const shape = data.shapes[`${data.curr.shape}`];
+		const xys = shape[data.curr.orientation % shape.length];
+		// grab in pairs, jump by 2 each loop
+		for (skip = 0; skip < 8; skip += 2) {
+			let px = data.curr.px + xys[0 + skip];
+			let py = data.curr.py + xys[1 + skip];
+			data.all.push({px, py, color: data.curr.color});
+		}
+	}
+
 	this.newColor = () => {
 		return this.gameData.colors[this.gameApi.random(this.gameData.colors.length)];
+	}
+
+	this.newShape = () => {
+		// small even number modulus from RNG are not well spread
+		// ...use a larger random max then modulus again
+		const shapes = Object.keys(this.gameData.shapes);
+		const shapeIdx = this.gameApi.random(123456789) % shapes.length;
+		const shape = shapes[shapeIdx];
+		return shape;
 	}
 
 	this.startingPosition = () => {
@@ -237,12 +331,27 @@
 	this.newBlock = () => {
 		const { px, py } = this.startingPosition();
 		const color = this.newColor();
+		const shape = this.newShape();
+		const orientation = 0;
 		return {
 			px,
 			py,
 			color,
+			shape,
+			orientation,
 			timer: this.gameData.conf.timer
 		};
+	}
+
+	this.renderShape = (ctx, block, blockSize) => {
+		const shape = this.gameData.shapes[`${block.shape}`];
+		const xys = shape[block.orientation % shape.length];
+		const color = block.color;
+		for (skip = 0; skip < 8; skip += 2) {
+			let px = block.px + xys[0 + skip];
+			let py = block.py + xys[1 + skip];
+			renderBlock(ctx, {color, px, py}, blockSize)
+		}
 	}
 
 	this.renderBlock = (ctx, block, blockSize) => {
@@ -277,9 +386,10 @@
 		if (data.gameOver) {
 			this.renderBackground(ctx, data.conf, 'darkred');
 		}
+		// once locked, all shapes are saved as individual blocks, so renderBlock()
 		data.all.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
 		if (data.curr) {
-			this.renderBlock(ctx, data.curr, data.conf.blockSize);
+			this.renderShape(ctx, data.curr, data.conf.blockSize);
 		}
 	}
 

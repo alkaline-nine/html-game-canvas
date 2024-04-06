@@ -43,49 +43,16 @@ function MarsagliaRandom(seed) {
 	this.xorShift64 = (a) => {
 		let b = a;
 		b ^= (b << 21);
-		b ^= (b >>> 35);
+		b ^= (b >> 35);
 		b ^= (b << 4);
 		return b;
 	}
 
 	this.random = (max) => {
 		const next = this.nextLong()
-		const result = Math.abs(((next>>>32)*max)>>32) % max;
+		const result = Math.abs(((next>>32)*max)>>32) % max;
 		//console.log('Rando next: ' + next + ' ret: ' + result + '/' + max);
 		return result;
 	}
-
-	// ORIG:
-	// private static long state = 0xCAFEBABE; // initial non-zero value
-
-	// public static final void seed(long seedVal) {
-	// 	state = seedVal;
-	// }
-
-	// private static final long nextLong() {
-	//   long a=state;
-	//   state = xorShift64(a);
-	//   return a;
-	// }
-
-	// private static final long xorShift64(long a) {
-	//   a ^= (a << 21);
-	//   a ^= (a >>> 35);
-	//   a ^= (a << 4);
-	//   return a;
-	// }
-
-	// /**
-	//  * This method is a random int generator inspired by Marsaglia, it will return a number between 0..n-1
-	//  * 
-	//  * @param n
-	//  * @return
-	//  */
-	// public static final int random(int max) {
-	//   if (max<0) throw new IllegalArgumentException();
-	//   long result=((nextLong()>>>32)*max)>>32;
-	//   return (int) result;
-	// }
-
 }
 export default MarsagliaRandom;
