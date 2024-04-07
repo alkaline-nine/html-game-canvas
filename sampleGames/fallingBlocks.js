@@ -39,7 +39,9 @@
 			rows: 20,
 			blockSize: 33,
 			timer: 40,
-			//count: 1000000
+			completeTimer: 25,
+			completeColor: 'lightblue',
+			gameOverColor: 'darkred',
 		},
 		colors: [
 			'blue',
@@ -86,11 +88,19 @@
 				[-1,-1,0,-1,0,0,1,0],
 				[1,-1,1,0,0,0,0,1],
 				[-1,-1,0,-1,0,0,1,0]
+			],
+			'tee': [
+				[-1,0,0,0,1,0,0,-1],
+				[0,-1,0,0,0,1,1,0],
+				[-1,0,0,0,1,0,0,1],
+				[0,-1,0,0,0,1,-1,0],
 			]
 		},
 		gameOver: false,
 		keysPressed: [],
 		all: [],
+		complete: [],
+		completeCount: 0,
 		curr: undefined
 	}
 
@@ -215,7 +225,8 @@
 			this.gameData.keysPressed.forEach(k => this.handleKeypressMovement(k, data));
 			this.gameData.keysPressed = [];
 		}
-		// TODO: check for data.all blocks that have a counter and decrement/remove/shift as needed
+		// check for complete rows for removal and shift down on counter
+		this.handleCompleteLines(data);
 		// when we don't have curr data, add new one randomly
 		if (!data.curr) {
 			data.curr = this.newBlock();
@@ -242,22 +253,91 @@
 			const { px, py } = this.startingPosition();
 			// check to see if we're still at starting position, which is game over
 			if (px === data.curr.px && py === data.curr.py) {
+				// TODO: what if locking this shape in starting position clears a line or more? game should continue?
 				console.log('locked in starting startingPosition, game over');
 				data.gameOver = true;
 			} else {
 				this.lockShape(data);
-				this.checkCompleteLines(data);
 				data.curr = this.newBlock();
 			}
 		}
 	}
 
 	/*
-	 * This will handle identifying locked block rows that are "complete" and ready to mark for removal
+	 * This will handle animating the removal of rows marked for removal
+	 */
+	this.handleCompleteLines = (data) => {
+		// if completeCount zero or less, nothing to do
+		if (data.completeCount > 0) {
+			// decrement until zero, then remove all rows pending removal and shift other blocks down
+			data.completeCount--;
+			console.log('decrement completeCount =', data.completeCount);
+			if (data.completeCount <= 0 && data.complete.length > 0) {
+				data.complete.forEach(py => this.handleCompleteRow(data, py));
+				data.complete = [];
+			}
+		}
+	}
+
+	/*
+	 * This will handle removing a single row at py, and shifting down locked blocks above (less than) py
+	 */
+	this.handleCompleteRow = (data, py) => {
+		console.log('removing row py =', py);
+		console.log('total blocks before removal =', data.all.length);
+		// filter out any blocks in py row...
+		data.all = data.all.filter(block => block.py !== py).map(block => {
+			// ...and shift down (add to py) and rows with a py < row py
+			if (block.py < py) {
+				block.py = block.py + 1;
+			}
+			return block;
+		});
+		console.log('total blocks after removal =', data.all.length);
+	}
+
+	/*
+	 * This will handle identifying any rows that are "complete" and ready to mark for removal
 	 */
 	this.checkCompleteLines = (data) => {
-		// TODO: check for new lines to be cleared based on this lock of shape blocks
-		// TODO: determine how to mark the data.all entries to have different styling and display for a moment before clearing/falling
+		// check each y row for complete, starting at the top, since rows above need to fall
+		for (py = 0; py < data.conf.rows; py++) {
+			console.log('checking complete for py =', py);
+			// if complete, mark for removal
+			if (this.checkCompleteRow(data, py)) {
+				console.log('mark complete for py =', py);
+				this.markCompleteRow(data, py);
+			}
+		};
+	}
+
+	/*
+	 * This will handle identifying if the row at py is "complete"
+	 */
+	this.checkCompleteRow = (data, py) => {
+		// filter/reduce down to every px with a matching py
+		const pxs = data.all.filter(block => block.py === py).map(block => block.px);
+		// then make sure the list of pxs includes every column
+		for (px = 0; px < data.conf.cols; px++) {
+			if (!pxs.includes(px)) {
+				return false;
+			}
+		}
+		// true when all included
+		return true;
+	}
+
+	/*
+	 * This will handle modifying to each complete row block and adding the row py to complete list
+	 */
+	this.markCompleteRow = (data, py) => {
+		// set removal color on every block with a matching py
+		data.all.filter(block => block.py === py).forEach(block => {
+			block.color = data.conf.completeColor;
+		});
+		// and add py to complete data, resetting removal timer
+		data.complete.push(py);
+		data.completeCount = data.conf.completeTimer;
 	}
 
 	/*
@@ -296,6 +376,9 @@
 		return false;
 	}
 
+	/*
+	 * This will take the curr shape and convert to individual blocks to lock, and then check for complete lines
+	 */
 	this.lockShape = (data) => {
 		// each piece of the shape gets its own block
 		const shape = data.shapes[`${data.curr.shape}`];
@@ -306,6 +389,8 @@
 			let py = data.curr.py + xys[1 + skip];
 			data.all.push({px, py, color: data.curr.color});
 		}
+		// then check for new complete rows
+		this.checkCompleteLines(data);
 	}
 
 	this.newColor = () => {
@@ -384,7 +469,7 @@
 	this.renderLayer = (idx, count, data, ctx) => {
 		//console.log('rendering layer idx=', idx);
 		if (data.gameOver) {
-			this.renderBackground(ctx, data.conf, 'darkred');
+			this.renderBackground(ctx, data.conf, data.conf.gameOverColor);
 		}
 		// once locked, all shapes are saved as individual blocks, so renderBlock()
 		data.all.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));

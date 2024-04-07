@@ -52,7 +52,7 @@ var gameCanvas = {
 	var config = conf.config;
 	console.log(`Configuration: pre-init config: ${JSON.stringify(config, null, 2)}\n\n`);
 
-	var rando = gameCanvas.core.rando = new MarsagliaRandom();
+	var rando = gameCanvas.core.rando = new MarsagliaRandom(new Date().getMilliseconds());
 	console.log('PRNG: initialized marsaglia psuedo random number generator with seed=' + "default");
 
 	console.log('KeyInput: Loading keyboard handler');
