@@ -38,10 +38,13 @@
 			cols: 14,
 			rows: 20,
 			blockSize: 33,
+			headerSize: 70,
 			timer: 40,
 			completeTimer: 25,
-			completeColor: 'lightblue',
+			completeColor: 'gainsboro',
 			gameOverColor: 'darkred',
+			gameColor: 'black',
+			headerColor: 'midnightblue',
 		},
 		colors: [
 			'blue',
@@ -60,10 +63,10 @@
 				[-2,0,-1,0,0,0,1,0]
 			],
 			'square': [
-				[-1,-1,-1,0,0,-1,0,0],
-				[-1,-1,-1,0,0,-1,0,0],
-				[-1,-1,-1,0,0,-1,0,0],
-				[-1,-1,-1,0,0,-1,0,0]
+				[0,0,0,1,1,0,1,1],
+				[0,0,0,1,1,0,1,1],
+				[0,0,0,1,1,0,1,1],
+				[0,0,0,1,1,0,1,1],
 			],
 			'left_l': [
 				[0,-1,0,0,0,1,1,1],
@@ -73,7 +76,7 @@
 			],
 			'right_l': [
 				[-1,1,0,1,0,0,0,-1],
-				[-1,-1,-1,0,0,0,1,0],
+				[-1,0,-1,1,0,1,1,1],
 				[1,-1,0,-1,0,0,0,1],
 				[-1,0,0,0,1,0,1,1]
 			],
@@ -81,19 +84,19 @@
 				[0,-1,0,0,1,0,1,1],
 				[-1,1,0,1,0,0,1,0],
 				[0,-1,0,0,1,0,1,1],
-				[-1,1,0,1,0,0,1,0]
+				[-1,1,0,1,0,0,1,0],
 			],
 			'right_z': [
 				[1,-1,1,0,0,0,0,1],
-				[-1,-1,0,-1,0,0,1,0],
+				[-1,0,0,0,0,1,1,1],
 				[1,-1,1,0,0,0,0,1],
-				[-1,-1,0,-1,0,0,1,0]
+				[-1,0,0,0,0,1,1,1],
 			],
 			'tee': [
-				[-1,0,0,0,1,0,0,-1],
 				[0,-1,0,0,0,1,1,0],
 				[-1,0,0,0,1,0,0,1],
 				[0,-1,0,0,0,1,-1,0],
+				[-1,0,0,0,1,0,0,-1],
 			]
 		},
 		gameOver: false,
@@ -101,7 +104,9 @@
 		all: [],
 		complete: [],
 		completeCount: 0,
-		curr: undefined
+		curr: undefined,
+		next: undefined,
+		score: 0
 	}
 
 	/* 
@@ -130,7 +135,7 @@
 		// override the canvas config if desired
 		// ...width/height changes take effect once upon startGame()
 		const width = this.gameApi.config().canvas.width = this.gameData.conf.cols * this.gameData.conf.blockSize;
-		const height = this.gameApi.config().canvas.height = this.gameData.conf.rows * this.gameData.conf.blockSize;
+		const height = this.gameApi.config().canvas.height = this.gameData.conf.rows * this.gameData.conf.blockSize + this.gameData.conf.headerSize;
 		console.log("Width/Height for game canvas engine = " + width + ":" + height);
 		// add minimal config to let this code think and render itself
 		const layer = {
@@ -147,7 +152,9 @@
 	 */
 	this.resetGameOver = () => {
 		this.gameData.gameOver = false;
+		this.gameData.score = 0;
 		this.gameData.curr = undefined;
+		this.gameData.next = undefined;
 		this.gameData.all = [];
 	}
 
@@ -158,17 +165,29 @@
 		const keypress = keys.at(0) || -1;
 		if (keypress === this.keyEsc) {
 			// stop
+			this.handleStartStop(true);
+		} else if (keypress === this.keyEnter) {
+			// toggle active
+			this.handleStartStop(this.gameData.active);
+		} else {
+			this.gameData.keysPressed.push(keypress);
+		}
+	}
+
+	/*
+	 * This will either stop or start the game, resetting gameOver when restarting
+	 */
+	this.handleStartStop = (stop) => {
+		// start or pause
+		if (stop) {
 			this.gameData.active = false;
 			this.gameApi.stopGame();
-		} else if (keypress === this.keyEnter) {
-			// start
+		} else {
 			if (this.gameData.gameOver) {
 				this.resetGameOver();
 			}
 			this.gameData.active = true;
 			this.gameApi.startGame();
-		} else {
-			this.gameData.keysPressed.push(keypress);
 		}
 	}
 
@@ -178,7 +197,7 @@
 	this.handleKeypressMovement = (keypress, data) => {
 		//console.log("Handling keypress: " + keypress);
 		if (data && data.curr) {
-			if (keypress === this.keyUp) {
+			if (keypress === this.keyUp || keypress == this.keySpace) {
 				const nextOrientation = data.curr.orientation + 1 % 4;
 				if (this.checkShapeBounds({ ...data.curr, orientation: nextOrientation}, data.all)) {
 					console.log('keypress: CANNOT move left, another block or boundary in the way');
@@ -228,8 +247,12 @@
 		// check for complete rows for removal and shift down on counter
 		this.handleCompleteLines(data);
 		// when we don't have curr data, add new one randomly
+		if (!data.next) {
+			data.next = this.newBlock();
+		}
 		if (!data.curr) {
-			data.curr = this.newBlock();
+			data.curr = data.next;
+			data.next = undefined;
 		}
 		// decrement curr timer and see if its ready to auto-fall...
 		if (data.curr.timer-- <= 0) {
@@ -244,7 +267,7 @@
 	this.handleAutoFallTimer = (data) => {
 		const nextPy = data.curr.py + 1;
 		// check fall position for collisions
-		if (this.checkShapeBounds({ ...data.curr, py: nextPy}, data.all) == false) {
+		if (this.checkShapeBounds({ ...data.curr, py: nextPy}, data.all) === false) {
 			// auto-fall
 			data.curr.py = nextPy;
 			data.curr.timer = this.gameData.conf.timer;
@@ -258,7 +281,8 @@
 				data.gameOver = true;
 			} else {
 				this.lockShape(data);
-				data.curr = this.newBlock();
+				data.curr = data.next;
+				data.next = undefined;
 			}
 		}
 	}
@@ -300,6 +324,7 @@
 	 * This will handle identifying any rows that are "complete" and ready to mark for removal
 	 */
 	this.checkCompleteLines = (data) => {
+		let linesComplete = 0;
 		// check each y row for complete, starting at the top, since rows above need to fall
 		for (py = 0; py < data.conf.rows; py++) {
 			console.log('checking complete for py =', py);
@@ -307,8 +332,17 @@
 			if (this.checkCompleteRow(data, py)) {
 				console.log('mark complete for py =', py);
 				this.markCompleteRow(data, py);
+				linesComplete++;
 			}
 		};
+		if (linesComplete > 0) {
+			// 100 points per line
+			this.addScore(linesComplete * 100);
+			// plus bonus for 3 or 4
+			if (linesComplete > 2) {
+				this.addScore(1000 * (linesComplete - 2));
+			}
+		}
 	}
 
 	/*
@@ -389,8 +423,14 @@
 			let py = data.curr.py + xys[1 + skip];
 			data.all.push({px, py, color: data.curr.color});
 		}
+		// bump score for each locked shape
+		this.addScore(5);
 		// then check for new complete rows
 		this.checkCompleteLines(data);
+	}
+
+	this.addScore = (plusScore) => {
+		this.gameData.score += plusScore;
 	}
 
 	this.newColor = () => {
@@ -445,10 +485,38 @@
 			type: 'rect', 
 			c: block.color,
 			x: block.px * blockSize, 
-			y: block.py * blockSize, 
+			y: block.py * blockSize + this.gameData.conf.headerSize, 
 			dx: blockSize, 
 			dy: blockSize
 		});
+	}
+
+	this.renderHeader = (ctx, conf, color) => {
+		// draw a different color background
+		this.gameApi.drawUtil({ 
+			type: 'rect', 
+			c: color,
+			x: 0, 
+			y: 0, 
+			dx: conf.cols * conf.blockSize, 
+			dy: conf.headerSize
+		});
+		ctx.fillStyle = "white";
+		ctx.font = "16px serif";
+		ctx.fillText("Score: " + this.gameData.score, conf.cols * conf.blockSize * 0.78, conf.headerSize * 0.9);
+		if (this.gameData.gameOver) {
+  			ctx.fillText("G A M E  O V E R ! !", 4, conf.headerSize * 0.9);
+		} else if (this.gameData.next) {
+  			ctx.fillText("Next:", 4, conf.headerSize * 0.9);
+			const nextShape = {
+				orientation: 1, 
+				color: this.gameData.next.color, 
+				shape: this.gameData.next.shape,
+				px: 3,
+				py: -2
+			};
+			this.renderShape(ctx, nextShape, conf.blockSize);
+		}
 	}
 
 	this.renderBackground = (ctx, conf, color) => {
@@ -459,7 +527,7 @@
 			x: 0, 
 			y: 0, 
 			dx: conf.cols * conf.blockSize, 
-			dy: conf.rows * conf.blockSize
+			dy: conf.rows * conf.blockSize + conf.headerSize
 		});
 	}
 
@@ -470,7 +538,10 @@
 		//console.log('rendering layer idx=', idx);
 		if (data.gameOver) {
 			this.renderBackground(ctx, data.conf, data.conf.gameOverColor);
+		} else {
+			this.renderBackground(ctx, data.conf, data.conf.gameColor);
 		}
+		this.renderHeader(ctx, data.conf, data.conf.headerColor);
 		// once locked, all shapes are saved as individual blocks, so renderBlock()
 		data.all.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
 		if (data.curr) {
