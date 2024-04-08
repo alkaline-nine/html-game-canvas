@@ -504,7 +504,7 @@
 		});
 		ctx.fillStyle = "white";
 		ctx.font = conf.headerFont;
-		ctx.fillText("Score: " + this.gameData.score, conf.cols * conf.blockSize * 0.78, conf.headerSize * 0.9);
+		ctx.fillText("Score: " + this.gameData.score, conf.cols * conf.blockSize * 0.7, conf.headerSize * 0.9);
 		if (this.gameData.gameOver) {
   			ctx.fillText("G A M E  O V E R ! !", 10, conf.headerSize * 0.9);
 		} else if (this.gameData.next) {
