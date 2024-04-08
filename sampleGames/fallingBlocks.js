@@ -45,6 +45,7 @@
 			gameOverColor: 'darkred',
 			gameColor: 'black',
 			headerColor: 'midnightblue',
+			headerFont: '16px sans-serif',
 		},
 		colors: [
 			'blue',
@@ -502,12 +503,12 @@
 			dy: conf.headerSize
 		});
 		ctx.fillStyle = "white";
-		ctx.font = "16px serif";
+		ctx.font = conf.headerFont;
 		ctx.fillText("Score: " + this.gameData.score, conf.cols * conf.blockSize * 0.78, conf.headerSize * 0.9);
 		if (this.gameData.gameOver) {
-  			ctx.fillText("G A M E  O V E R ! !", 4, conf.headerSize * 0.9);
+  			ctx.fillText("G A M E  O V E R ! !", 10, conf.headerSize * 0.9);
 		} else if (this.gameData.next) {
-  			ctx.fillText("Next:", 4, conf.headerSize * 0.9);
+  			ctx.fillText("Next:", 10, conf.headerSize * 0.9);
 			const nextShape = {
 				orientation: 1, 
 				color: this.gameData.next.color, 
