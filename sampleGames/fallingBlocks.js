@@ -6,6 +6,8 @@
 	console.log('Loading window.fallingBlocks...');
 	window.fallingBlocks = this;
 
+	this.htmlControlSection = undefined;
+
 	/* 
 	 * The gameApi is required to run this sample game
 	 */
@@ -13,7 +15,7 @@
 	this.init = (gameApi) => {
 		// attach the gameApi
 		this.gameApi = gameApi;
-		// add custom keyboard controls
+		// add custom keyboard (and touch/click) controls
 		this.initControls();
 		// add custom layer data
 		this.initLayers();
@@ -46,6 +48,7 @@
 			gameColor: 'black',
 			headerColor: 'midnightblue',
 			headerFont: '16px sans-serif',
+			controlFont: '14px sans-serif',
 		},
 		colors: [
 			'blue',
@@ -126,7 +129,32 @@
 			this.keyRight]);
 		// ...and a callback function that will fire every cycle for new input
 		this.gameApi.inputCallback(this.handleKeypress);
-		console.log("Setup controls for game canvas engine = " + JSON.stringify(this.gameApi.config().input.keys));
+		console.log("Setup keyboard controls for game canvas engine = " + JSON.stringify(this.gameApi.config().input.keys));
+		// ...add buttons to html control section for anyone with a touch screen
+		this.htmlControlSection = document.getElementById('html_control_section');
+		if (this.htmlControlSection) {
+			this.addControlButton(this.htmlControlSection, 'Pause/Restart', this.keyEnter, 'darkred', 'white');
+			this.addControlButton(this.htmlControlSection, 'Move Left', this.keyLeft, 'darkblue', 'white');
+			this.addControlButton(this.htmlControlSection, 'Rotate', this.keySpace, 'darkgreen', 'white');
+			this.addControlButton(this.htmlControlSection, 'Move Right', this.keyRight, 'darkblue', 'white');
+			this.addControlButton(this.htmlControlSection, 'Fast Fall', this.keyDown, 'darkred', 'white');
+		}
+	}
+
+	this.addControlButton = (parentDiv, name, key, color, textColor, font) => {
+		const button = document.createElement('button');
+		button.innerHTML = name;
+		button.style.margin = '8px';
+		button.style.height = '36px';
+		button.style.font = this.gameData.conf.controlFont;
+		button.style.color = textColor;
+		button.style.background = color;
+		button.addEventListener('click', () => { 
+			console.log(name + ' click!');
+			this.handleKeypress([key]);
+		});
+		parentDiv.appendChild(button);
+		console.log("Setup touch controls for " + name);
 	}
 
 	/* 
