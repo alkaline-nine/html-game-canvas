@@ -43,9 +43,11 @@
 			headerSize: 70,
 			timer: 40,
 			completeTimer: 25,
+			lockedTimer: 15,
 			completeColor: 'gainsboro',
 			gameOverColor: 'darkred',
 			gameColor: 'black',
+			lockedColor: 'white',
 			headerColor: 'midnightblue',
 			headerFont: '16px sans-serif',
 			controlFont: '14px sans-serif',
@@ -106,6 +108,7 @@
 		gameOver: false,
 		keysPressed: [],
 		all: [],
+		locked: [],
 		complete: [],
 		completeCount: 0,
 		curr: undefined,
@@ -275,6 +278,8 @@
 		}
 		// check for complete rows for removal and shift down on counter
 		this.handleCompleteLines(data);
+		// check for complete rows for removal and shift down on counter
+		this.handleLockedBlocks(data);
 		// when we don't have curr data, add new one randomly
 		if (!data.next) {
 			data.next = this.newBlock();
@@ -404,6 +409,18 @@
 	}
 
 	/*
+	 * This will handle animating the latest locked shape
+	 */
+	this.handleLockedBlocks = (data) => {
+		if (data.locked.length > 0) {
+			// decrement each timer
+			data.locked.forEach(b => b.timer--);
+			// if zero or less, remove from locked data
+			data.locked = data.locked.filter(b => b.timer > 0);
+		}
+	}
+
+	/*
 	 * This will return true when any block within the current shape is overlapping another block or boundary
 	 */
 	this.checkShapeBounds = (block, all) => {
@@ -451,6 +468,8 @@
 			let px = data.curr.px + xys[0 + skip];
 			let py = data.curr.py + xys[1 + skip];
 			data.all.push({px, py, color: data.curr.color});
+			// also add to locked data with a count to decrement so it can be highlighted briefly
+			data.locked.push({px, py, color: data.conf.lockedColor, timer: data.conf.lockedTimer})
 		}
 		// bump score for each locked shape
 		this.addScore(5);
@@ -573,6 +592,7 @@
 		this.renderHeader(ctx, data.conf, data.conf.headerColor);
 		// once locked, all shapes are saved as individual blocks, so renderBlock()
 		data.all.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
+		data.locked.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
 		if (data.curr) {
 			this.renderShape(ctx, data.curr, data.conf.blockSize);
 		}
