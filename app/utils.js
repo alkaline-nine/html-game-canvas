@@ -9,6 +9,9 @@ function Utils(canvas, config) {
 		//console.log("util.draw opts=" + JSON.stringify(opts));
 		this.ctx.fillStyle = opts.c;
 		switch(opts.type) {
+			case 'text':
+				this.drawText(opts);
+				break;
 			case 'rect':
 				this.drawRect(opts);
 				break;
@@ -27,6 +30,16 @@ function Utils(canvas, config) {
 		if (Array.isArray(optsArray)) {
 			optsArray.forEach(o => this.draw(o));
 		}
+	}
+
+	/* Requires { x, y, c, font, text } */
+	this.drawText = (opts) => {
+		this.ctx.font = opts.font || '12px serif';
+		this.ctx.fillText( //
+			opts.text, //
+			opts.x, //
+			opts.y //
+		);
 	}
 
 	/* Requires { x, y, dx, dy } */

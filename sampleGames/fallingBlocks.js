@@ -6,41 +6,42 @@
 	console.log('Loading window.fallingBlocks...');
 	window.fallingBlocks = this;
 
-	this.htmlControlSection = undefined;
-
 	/* 
 	 * The gameApi is required to run this sample game
 	 */
 	this.gameApi = undefined;
-	this.init = (gameApi) => {
+	this.init = (api) => {
+		const conf = this.gameData.conf;
 		// attach the gameApi
-		this.gameApi = gameApi;
+		this.gameApi = api;
 		// add custom keyboard (and touch/click) controls
-		this.initControls();
+		this.initControls(api, conf);
 		// add custom layer data
-		this.initLayers();
+		this.initLayers(api, conf);
 		console.log('...fallingBlocks initialized');
-		this.gameApi.startGame();
+		api.startGame();
 	}
  
-	/* 
-	 * Some example keys to handle by keyCode
-	 */
-	this.keyEnter = 13;
-	this.keyEsc = 27;
-	this.keySpace = 32;
-	this.keyLeft = 37;
-	this.keyUp = 38;
-	this.keyRight = 39;
-	this.keyDown = 40;
-
 	this.gameData = {
-		active: true,
+		state: {
+			active: true,
+			gameOver: false,
+			keysPressed: [],
+			all: [],
+			locked: [],
+			complete: [],
+			completeCount: 0,
+			curr: undefined,
+			next: undefined,
+			lines: 0,
+			score: 0,
+		},
 		conf: {
 			cols: 14,
 			rows: 20,
 			blockSize: 33,
 			headerSize: 70,
+			frameBorder: 5,
 			timer: 40,
 			completeTimer: 25,
 			lockedTimer: 15,
@@ -51,106 +52,103 @@
 			headerColor: 'midnightblue',
 			headerFont: '16px sans-serif',
 			controlFont: '14px sans-serif',
+			textColor: 'white',
+			blockDarkShade: 'rgba(0,0,0,0.1)',
+			blockLightShade: 'rgba(255,255,255,0.1)',
+			htmlControlSection: undefined,
+			keys: {
+				keyEnter: 13,
+				keyEsc: 27,
+				keySpace: 32,
+				keyLeft: 37,
+				keyUp: 38,
+				keyRight: 39,
+				keyDown: 40,
+			},
+			colors: [
+				'blue',
+				'green',
+				'red',
+				'magenta',
+				'yellow',
+				'cyan',
+				'darkgrey',
+			],
+			shapes: {
+				'line': [
+					[0,-1,0,0,0,1,0,2],
+					[-2,0,-1,0,0,0,1,0],
+					[0,-1,0,0,0,1,0,2],
+					[-2,0,-1,0,0,0,1,0]
+				],
+				'square': [
+					[0,0,0,1,1,0,1,1],
+					[0,0,0,1,1,0,1,1],
+					[0,0,0,1,1,0,1,1],
+					[0,0,0,1,1,0,1,1],
+				],
+				'left_l': [
+					[0,-1,0,0,0,1,1,1],
+					[-1,1,-1,0,0,0,1,0],
+					[-1,-1,0,-1,0,0,0,1],
+					[-1,0,0,0,1,0,1,-1]
+				],
+				'right_l': [
+					[-1,1,0,1,0,0,0,-1],
+					[-1,0,-1,1,0,1,1,1],
+					[1,-1,0,-1,0,0,0,1],
+					[-1,0,0,0,1,0,1,1]
+				],
+				'left_z': [
+					[0,-1,0,0,1,0,1,1],
+					[-1,1,0,1,0,0,1,0],
+					[0,-1,0,0,1,0,1,1],
+					[-1,1,0,1,0,0,1,0],
+				],
+				'right_z': [
+					[1,-1,1,0,0,0,0,1],
+					[-1,0,0,0,0,1,1,1],
+					[1,-1,1,0,0,0,0,1],
+					[-1,0,0,0,0,1,1,1],
+				],
+				'tee': [
+					[0,-1,0,0,0,1,1,0],
+					[-1,0,0,0,1,0,0,1],
+					[0,-1,0,0,0,1,-1,0],
+					[-1,0,0,0,1,0,0,-1],
+				]
+			},
 		},
-		colors: [
-			'blue',
-			'green',
-			'red',
-			'magenta',
-			'yellow',
-			'cyan',
-			'darkgrey',
-		],
-		shapes: {
-			'line': [
-				[0,-1,0,0,0,1,0,2],
-				[-2,0,-1,0,0,0,1,0],
-				[0,-1,0,0,0,1,0,2],
-				[-2,0,-1,0,0,0,1,0]
-			],
-			'square': [
-				[0,0,0,1,1,0,1,1],
-				[0,0,0,1,1,0,1,1],
-				[0,0,0,1,1,0,1,1],
-				[0,0,0,1,1,0,1,1],
-			],
-			'left_l': [
-				[0,-1,0,0,0,1,1,1],
-				[-1,1,-1,0,0,0,1,0],
-				[-1,-1,0,-1,0,0,0,1],
-				[-1,0,0,0,1,0,1,-1]
-			],
-			'right_l': [
-				[-1,1,0,1,0,0,0,-1],
-				[-1,0,-1,1,0,1,1,1],
-				[1,-1,0,-1,0,0,0,1],
-				[-1,0,0,0,1,0,1,1]
-			],
-			'left_z': [
-				[0,-1,0,0,1,0,1,1],
-				[-1,1,0,1,0,0,1,0],
-				[0,-1,0,0,1,0,1,1],
-				[-1,1,0,1,0,0,1,0],
-			],
-			'right_z': [
-				[1,-1,1,0,0,0,0,1],
-				[-1,0,0,0,0,1,1,1],
-				[1,-1,1,0,0,0,0,1],
-				[-1,0,0,0,0,1,1,1],
-			],
-			'tee': [
-				[0,-1,0,0,0,1,1,0],
-				[-1,0,0,0,1,0,0,1],
-				[0,-1,0,0,0,1,-1,0],
-				[-1,0,0,0,1,0,0,-1],
-			]
-		},
-		gameOver: false,
-		keysPressed: [],
-		all: [],
-		locked: [],
-		complete: [],
-		completeCount: 0,
-		curr: undefined,
-		next: undefined,
-		lines: 0,
-		score: 0
 	}
 
 	/* 
 	 * Simple example of game control init with some typical arrow key codes
 	 */
-	this.initControls = () => {
+	this.initControls = (api, conf) => {
 		// setup handling for key presses by numeric value in array format
 		// ...set keys to monitor by passing array of keyCodes (numbers)
-		this.gameApi.keys([
-			this.keyEnter, 
-			this.keyEsc, 
-			this.keySpace, 
-			this.keyUp, 
-			this.keyDown, 
-			this.keyLeft, 
-			this.keyRight]);
+		console.log("Setup keyboard controls for keys = " + JSON.stringify(Object.values(conf.keys)));
+		api.keys(Object.values(conf.keys));
 		// ...and a callback function that will fire every cycle for new input
-		this.gameApi.inputCallback(this.handleKeypress);
-		console.log("Setup keyboard controls for game canvas engine = " + JSON.stringify(this.gameApi.config().input.keys));
+		api.inputCallback(this.handleKeypress);
+		console.log("Setup keyboard controls for game canvas engine = " + JSON.stringify(api.config().input.keys));
 		// ...add buttons to html control section for anyone with a touch screen
-		this.htmlControlSection = document.getElementById('html_control_section');
-		if (this.htmlControlSection) {
-			this.addControlButton(this.htmlControlSection, 'Pause/Restart', this.keyEnter, 'darkred', 'white');
-			this.addControlButton(this.htmlControlSection, 'Move Left', this.keyLeft, 'darkblue', 'white');
-			this.addControlButton(this.htmlControlSection, 'Rotate', this.keySpace, 'darkgreen', 'white');
-			this.addControlButton(this.htmlControlSection, 'Move Right', this.keyRight, 'darkblue', 'white');
-			this.addControlButton(this.htmlControlSection, 'Fast Fall', this.keyDown, 'darkred', 'white');
+		conf.htmlControlSection = document.getElementById('html_control_section');
+		if (conf.htmlControlSection) {
+			this.addControlButton(conf, conf.htmlControlSection, 'Pause/Restart', conf.keys.keyEnter, 'darkred', 'white');
+			this.addControlButton(conf, conf.htmlControlSection, 'Move Left', conf.keys.keyLeft, 'darkblue', 'white');
+			this.addControlButton(conf, conf.htmlControlSection, 'Rotate', conf.keys.keySpace, 'darkgreen', 'white');
+			this.addControlButton(conf, conf.htmlControlSection, 'Move Right', conf.keys.keyRight, 'darkblue', 'white');
+			this.addControlButton(conf, conf.htmlControlSection, 'Fast Fall', conf.keys.keyDown, 'darkred', 'white');
 		}
 	}
 
-	this.addControlButton = (parentDiv, name, key, color, textColor, font) => {
+	this.addControlButton = (conf, parentDiv, name, key, color, textColor, font) => {
 		const button = document.createElement('button');
 		button.innerHTML = name;
 		button.style.margin = '8px';
 		button.style.height = '36px';
-		button.style.font = this.gameData.conf.controlFont;
+		button.style.font = conf.controlFont;
 		button.style.color = textColor;
 		button.style.background = color;
 		button.addEventListener('click', () => { 
@@ -164,11 +162,11 @@
 	/* 
 	 * Simple example of game layer init on to the otherwise empty canvas
 	 */
-	this.initLayers = () => {
+	this.initLayers = (api, conf) => {
 		// override the canvas config if desired
 		// ...width/height changes take effect once upon startGame()
-		const width = this.gameApi.config().canvas.width = this.gameData.conf.cols * this.gameData.conf.blockSize;
-		const height = this.gameApi.config().canvas.height = this.gameData.conf.rows * this.gameData.conf.blockSize + this.gameData.conf.headerSize;
+		const width = api.config().canvas.width = conf.cols * conf.blockSize + 2 * conf.frameBorder;
+		const height = api.config().canvas.height = conf.rows * conf.blockSize + conf.headerSize + 2 * conf.frameBorder;
 		console.log("Width/Height for game canvas engine = " + width + ":" + height);
 		// add minimal config to let this code think and render itself
 		const layer = {
@@ -176,83 +174,89 @@
 			render: this.renderLayer,
 			data: this.gameData
 		};
-		this.gameApi.addLayer(layer);
+		api.addLayer(layer);
 		console.log("Added object to html game canvas engine");
 	}
 
 	/*
 	 * Reset all data and gameOver flag
 	 */
-	this.resetGameOver = () => {
-		this.gameData.gameOver = false;
-		this.gameData.lines = 0;
-		this.gameData.score = 0;
-		this.gameData.curr = undefined;
-		this.gameData.next = undefined;
-		this.gameData.all = [];
+	this.resetGameOver = (state) => {
+		state.gameOver = false;
+		state.lines = 0;
+		state.score = 0;
+		state.curr = undefined;
+		state.next = undefined;
+		state.all = [];
+		state.locked = [];
+		state.complete = [];
+		state.completeCount = 0;
 	}
 
 	/*
 	 * Handle inputCallback to start/stop, or push to keysPressed for think time handling
 	 */
 	this.handleKeypress = (keys) => {
+		const api = this.gameApi;
+		const state = this.gameData.state;
+		const conf = this.gameData.conf;
 		const keypress = keys.at(0) || -1;
-		if (keypress === this.keyEsc) {
+		if (keypress === conf.keys.keyEsc) {
 			// stop
-			this.handleStartStop(true);
-		} else if (keypress === this.keyEnter) {
+			this.handleStartStop(api, state, true);
+		} else if (keypress === conf.keys.keyEnter) {
 			// toggle active
-			this.handleStartStop(this.gameData.active);
+			this.handleStartStop(api, state, state.active);
 		} else {
-			this.gameData.keysPressed.push(keypress);
+			state.keysPressed.push(keypress);
 		}
 	}
 
 	/*
 	 * This will either stop or start the game, resetting gameOver when restarting
 	 */
-	this.handleStartStop = (stop) => {
+	this.handleStartStop = (api, state, stop) => {
 		// start or pause
 		if (stop) {
-			this.gameData.active = false;
-			this.gameApi.stopGame();
+			state.active = false;
+			api.stopGame();
 		} else {
-			if (this.gameData.gameOver) {
-				this.resetGameOver();
+			if (state.gameOver) {
+				this.resetGameOver(state);
 			}
-			this.gameData.active = true;
-			this.gameApi.startGame();
+			state.active = true;
+			api.startGame();
 		}
 	}
 
 	/*
 	 * Helper to handle directional movement of current block
 	 */
-	this.handleKeypressMovement = (keypress, data) => {
+	this.handleKeypressMovement = (conf, state, keypress) => {
 		//console.log("Handling keypress: " + keypress);
-		if (data && data.curr) {
-			if (keypress === this.keyUp || keypress == this.keySpace) {
-				const nextOrientation = data.curr.orientation + 1 % 4;
-				if (this.checkShapeBounds({ ...data.curr, orientation: nextOrientation}, data.all)) {
+		if (state && state.curr) {
+			if (keypress === conf.keys.keyUp || keypress == conf.keys.keySpace) {
+				const nextOrientation = state.curr.orientation + 1 % 4;
+				if (this.checkShapeBounds(conf, { ...state.curr, orientation: nextOrientation}, state.all)) {
 					console.log('keypress: CANNOT move left, another block or boundary in the way');
 				} else {
-					data.curr.orientation = nextOrientation;
+					state.curr.orientation = nextOrientation;
 				}
-			} else if (keypress === this.keyDown) {
-				data.curr.timer = 0;
-			} else if (keypress === this.keyLeft) {
-				const nextPx = data.curr.px - 1;
-				if (this.checkShapeBounds({ ...data.curr, px: nextPx}, data.all)) {
+			} else if (keypress === conf.keys.keyDown) {
+				state.curr.timer = 0;
+			} else if (keypress === conf.keys.keyLeft) {
+				const nextPx = state.curr.px - 1;
+				if (this.checkShapeBounds(conf, { ...state.curr, px: nextPx}, state.all)) {
 					console.log('keypress: CANNOT move left, another block or boundary in the way');
 				} else {
-					data.curr.px = nextPx;
+					state.curr.px = nextPx;
 				}
-			} else if (keypress === this.keyRight) {
-				const nextPx = data.curr.px + 1;
-				if (this.checkShapeBounds({ ...data.curr, px: nextPx}, data.all)) {
+			} else if (keypress === conf.keys.keyRight) {
+				const nextPx = state.curr.px + 1;
+				if (this.checkShapeBounds(conf, { ...state.curr, px: nextPx}, state.all)) {
 					console.log('keypress: CANNOT move right, another block or boundary in the way');
 				} else {
-					data.curr.px = nextPx;
+					state.curr.px = nextPx;
 				}
 			} else {
 				console.log("keypress: UNKNOWN ", keypress);
@@ -267,32 +271,35 @@
 	 * ...and doing bounds checks after movement
 	 */
 	this.thinkLayer = (idx, count, data) => {
+		const api = this.gameApi;
+		const state = data.state;
+		const conf = data.conf;
 		// stop game engine when gameover
-		if (data.gameOver) {
-			data.active = false;
-			this.gameApi.stopGame();
+		if (state.gameOver) {
+			state.active = false;
+			api.stopGame();
 			return;
 		}
 		// check pending keypress, handle all, then clear
-		if (this.gameData.keysPressed.length > 0) {
-			this.gameData.keysPressed.forEach(k => this.handleKeypressMovement(k, data));
-			this.gameData.keysPressed = [];
+		if (state.keysPressed.length > 0) {
+			state.keysPressed.forEach(k => this.handleKeypressMovement(conf, state, k));
+			state.keysPressed = [];
 		}
 		// check for complete rows for removal and shift down on counter
-		this.handleCompleteLines(data);
+		this.handleCompleteLines(state);
 		// check for complete rows for removal and shift down on counter
-		this.handleLockedBlocks(data);
+		this.handleLockedBlocks(state);
 		// when we don't have curr data, add new one randomly
-		if (!data.next) {
-			data.next = this.newBlock();
+		if (!state.next) {
+			state.next = this.newBlock(api, conf);
 		}
-		if (!data.curr) {
-			data.curr = data.next;
-			data.next = undefined;
+		if (!state.curr) {
+			state.curr = state.next;
+			state.next = undefined;
 		}
 		// decrement curr timer and see if its ready to auto-fall...
-		if (data.curr.timer-- <= 0) {
-			this.handleAutoFallTimer(data);
+		if (state.curr.timer-- <= 0) {
+			this.handleAutoFallTimer(conf, state);
 		}
 	}
 
@@ -300,25 +307,25 @@
 	 * This will handle checking if the auto-fall would cause a collision.
 	 * Then either let the shape fall by one position, or lock it in to pre-fall position and create new.
 	 */
-	this.handleAutoFallTimer = (data) => {
-		const nextPy = data.curr.py + 1;
+	this.handleAutoFallTimer = (conf, state) => {
+		const nextPy = state.curr.py + 1;
 		// check fall position for collisions
-		if (this.checkShapeBounds({ ...data.curr, py: nextPy}, data.all) === false) {
+		if (this.checkShapeBounds(conf, { ...state.curr, py: nextPy}, state.all) === false) {
 			// auto-fall
-			data.curr.py = nextPy;
-			data.curr.timer = this.gameData.conf.timer;
+			state.curr.py = nextPy;
+			state.curr.timer = conf.timer;
 		} else {
 			// auto-fall would violate bounds, lock at current position
-			const { px, py } = this.startingPosition();
+			const { px, py } = this.startingPosition(conf);
 			// check to see if we're still at starting position, which is game over
-			if (px === data.curr.px && py === data.curr.py) {
+			if (px === state.curr.px && py === state.curr.py) {
 				// TODO: what if locking this shape in starting position clears a line or more? game should continue?
 				console.log('locked in starting startingPosition, game over');
-				data.gameOver = true;
+				state.gameOver = true;
 			} else {
-				this.lockShape(data);
-				data.curr = data.next;
-				data.next = undefined;
+				this.lockShape(conf, state);
+				state.curr = state.next;
+				state.next = undefined;
 			}
 		}
 	}
@@ -326,15 +333,15 @@
 	/*
 	 * This will handle animating the removal of rows marked for removal
 	 */
-	this.handleCompleteLines = (data) => {
+	this.handleCompleteLines = (state) => {
 		// if completeCount zero or less, nothing to do
-		if (data.completeCount > 0) {
+		if (state.completeCount > 0) {
 			// decrement until zero, then remove all rows pending removal and shift other blocks down
-			data.completeCount--;
-			console.log('decrement completeCount =', data.completeCount);
-			if (data.completeCount <= 0 && data.complete.length > 0) {
-				data.complete.forEach(py => this.handleCompleteRow(data, py));
-				data.complete = [];
+			state.completeCount--;
+			console.log('decrement completeCount =', state.completeCount);
+			if (state.completeCount <= 0 && state.complete.length > 0) {
+				state.complete.forEach(py => this.handleCompleteRow(state, py));
+				state.complete = [];
 			}
 		}
 	}
@@ -342,44 +349,41 @@
 	/*
 	 * This will handle removing a single row at py, and shifting down locked blocks above (less than) py
 	 */
-	this.handleCompleteRow = (data, py) => {
+	this.handleCompleteRow = (state, py) => {
 		console.log('removing row py =', py);
-		console.log('total blocks before removal =', data.all.length);
 		// filter out any blocks in py row...
-		data.all = data.all.filter(block => block.py !== py).map(block => {
+		state.all = state.all.filter(block => block.py !== py).map(block => {
 			// ...and shift down (add to py) and rows with a py < row py
 			if (block.py < py) {
 				block.py = block.py + 1;
 			}
 			return block;
 		});
-		console.log('total blocks after removal =', data.all.length);
 	}
 
 	/*
 	 * This will handle identifying any rows that are "complete" and ready to mark for removal
 	 */
-	this.checkCompleteLines = (data) => {
+	this.checkCompleteLines = (conf, state) => {
 		let completeLines = 0;
 		// check each y row for complete, starting at the top, since rows above need to fall
-		for (py = 0; py < data.conf.rows; py++) {
-			console.log('checking complete for py =', py);
+		for (py = 0; py < conf.rows; py++) {
 			// if complete, mark for removal
-			if (this.checkCompleteRow(data, py)) {
+			if (this.checkCompleteRow(conf, state, py)) {
 				console.log('mark complete for py =', py);
-				this.markCompleteRow(data, py);
+				this.markCompleteRow(conf, state, py);
 				completeLines++;
 			}
 		};
 		if (completeLines > 0) {
-			data.lines += completeLines;
+			state.lines += completeLines;
 			// 250 points per line
-			this.addScore(completeLines * 250);
+			state.score += completeLines * 250;
 			// plus bonus for 3 or 4
 			if (completeLines > 3) {
-				this.addScore(4000);
+				state.score += 4000;
 			} else if (completeLines > 2) {
-				this.addScore(1250);
+				state.score += 1250;
 			}
 		}
 	}
@@ -387,11 +391,11 @@
 	/*
 	 * This will handle identifying if the row at py is "complete"
 	 */
-	this.checkCompleteRow = (data, py) => {
+	this.checkCompleteRow = (conf, state, py) => {
 		// filter/reduce down to every px with a matching py
-		const pxs = data.all.filter(block => block.py === py).map(block => block.px);
+		const pxs = state.all.filter(block => block.py === py).map(block => block.px);
 		// then make sure the list of pxs includes every column
-		for (px = 0; px < data.conf.cols; px++) {
+		for (px = 0; px < conf.cols; px++) {
 			if (!pxs.includes(px)) {
 				return false;
 			}
@@ -403,40 +407,40 @@
 	/*
 	 * This will handle modifying to each complete row block and adding the row py to complete list
 	 */
-	this.markCompleteRow = (data, py) => {
+	this.markCompleteRow = (conf, state, py) => {
 		// set removal color on every block with a matching py
-		data.all.filter(block => block.py === py).forEach(block => {
-			block.color = data.conf.completeColor;
+		state.all.filter(block => block.py === py).forEach(block => {
+			block.color = conf.completeColor;
 		});
 		// and add py to complete data, resetting removal timer
-		data.complete.push(py);
-		data.completeCount = data.conf.completeTimer;
+		state.complete.push(py);
+		state.completeCount = conf.completeTimer;
 	}
 
 	/*
 	 * This will handle animating the latest locked shape
 	 */
-	this.handleLockedBlocks = (data) => {
-		if (data.locked.length > 0) {
+	this.handleLockedBlocks = (state) => {
+		if (state.locked.length > 0) {
 			// decrement each timer
-			data.locked.forEach(b => b.timer--);
+			state.locked.forEach(b => b.timer--);
 			// if zero or less, remove from locked data
-			data.locked = data.locked.filter(b => b.timer > 0);
+			state.locked = state.locked.filter(b => b.timer > 0);
 		}
 	}
 
 	/*
 	 * This will return true when any block within the current shape is overlapping another block or boundary
 	 */
-	this.checkShapeBounds = (block, all) => {
-		const shape = this.gameData.shapes[`${block.shape}`];
+	this.checkShapeBounds = (conf, block, all) => {
+		const shape = conf.shapes[`${block.shape}`];
 		const xys = shape[block.orientation % shape.length];
 		const color = block.color;
 		let shapeBounds = false;
 		for (skip = 0; skip < 8 && !shapeBounds; skip += 2) {
 			let px = block.px + xys[0 + skip];
 			let py = block.py + xys[1 + skip];
-			shapeBounds = checkBounds(px, py, all);
+			shapeBounds = checkBounds(conf, px, py, all);
 		}
 		return shapeBounds;
 	}
@@ -444,12 +448,12 @@
 	/*
 	 * This will return true when x,y is overlapping another block or boundary
 	 */
-	this.checkBounds = (px, py, all) => {
+	this.checkBounds = (conf, px, py, all) => {
 		// check x,y against bounds of board
 		if (
-			py >= this.gameData.conf.rows ||
+			py >= conf.rows ||
 			px < 0 ||
-			px >= this.gameData.conf.cols
+			px >= conf.cols
 		) {
 			return true;
 		}
@@ -464,52 +468,48 @@
 	/*
 	 * This will take the curr shape and convert to individual blocks to lock, and then check for complete lines
 	 */
-	this.lockShape = (data) => {
+	this.lockShape = (conf, state) => {
 		// each piece of the shape gets its own block
-		const shape = data.shapes[`${data.curr.shape}`];
-		const xys = shape[data.curr.orientation % shape.length];
+		const shape = conf.shapes[`${state.curr.shape}`];
+		const xys = shape[state.curr.orientation % shape.length];
 		// grab in pairs, jump by 2 each loop
 		for (skip = 0; skip < 8; skip += 2) {
-			let px = data.curr.px + xys[0 + skip];
-			let py = data.curr.py + xys[1 + skip];
-			data.all.push({px, py, color: data.curr.color});
+			let px = state.curr.px + xys[0 + skip];
+			let py = state.curr.py + xys[1 + skip];
+			state.all.push({px, py, color: state.curr.color});
 			// also add to locked data with a count to decrement so it can be highlighted briefly
-			data.locked.push({px, py, color: data.conf.lockedColor, timer: data.conf.lockedTimer})
+			state.locked.push({px, py, color: conf.lockedColor, timer: conf.lockedTimer})
 		}
 		// bump score for each locked shape
-		this.addScore(5);
+		state.score += 5;
 		// then check for new complete rows
-		this.checkCompleteLines(data);
+		this.checkCompleteLines(conf, state);
 	}
 
-	this.addScore = (plusScore) => {
-		this.gameData.score += plusScore;
+	this.newColor = (api, conf) => {
+		return conf.colors[api.random(conf.colors.length)];
 	}
 
-	this.newColor = () => {
-		return this.gameData.colors[this.gameApi.random(this.gameData.colors.length)];
-	}
-
-	this.newShape = () => {
+	this.newShape = (api, conf) => {
 		// small even number modulus from RNG are not well spread
 		// ...use a larger random max then modulus again
-		const shapes = Object.keys(this.gameData.shapes);
-		const shapeIdx = this.gameApi.random(123456789) % shapes.length;
+		const shapes = Object.keys(conf.shapes);
+		const shapeIdx = api.random(123456789) % shapes.length;
 		const shape = shapes[shapeIdx];
 		return shape;
 	}
 
-	this.startingPosition = () => {
+	this.startingPosition = (conf) => {
 		return { 
-			px: this.gameData.conf.cols/2 - 1, 
+			px: conf.cols/2 - 1, 
 			py: 0
 		}; 
 	}
 
-	this.newBlock = () => {
-		const { px, py } = this.startingPosition();
-		const color = this.newColor();
-		const shape = this.newShape();
+	this.newBlock = (api, conf) => {
+		const { px, py } = this.startingPosition(conf);
+		const color = this.newColor(api, conf);
+		const shape = this.newShape(api, conf);
 		const orientation = 0;
 		return {
 			px,
@@ -517,72 +517,114 @@
 			color,
 			shape,
 			orientation,
-			timer: this.gameData.conf.timer
+			timer: conf.timer
 		};
 	}
 
-	this.renderShape = (ctx, block, blockSize) => {
-		const shape = this.gameData.shapes[`${block.shape}`];
+	this.renderShape = (api, conf, block, blockSize) => {
+		const shape = conf.shapes[`${block.shape}`];
 		const xys = shape[block.orientation % shape.length];
 		const color = block.color;
 		for (skip = 0; skip < 8; skip += 2) {
 			let px = block.px + xys[0 + skip];
 			let py = block.py + xys[1 + skip];
-			renderBlock(ctx, {color, px, py}, blockSize)
+			this.renderBlock(api, conf, {color, px, py}, blockSize)
 		}
 	}
 
-	this.renderBlock = (ctx, block, blockSize) => {
-		//console.log('rendering block x/y/s=', block.px, block.py, blockSize);
-		this.gameApi.drawUtil({ 
-			type: 'rect', 
+	this.renderBlock = (api, conf, block, blockSize) => {
+		const bx = block.px * blockSize + conf.frameBorder;
+		const by = block.py * blockSize + conf.headerSize + conf.frameBorder;
+		const corners = [
+			{ x: bx, y: by },
+			{ x: bx + blockSize, y: by },
+			{ x: bx + blockSize, y: by + blockSize },
+			{ x: bx, y: by + blockSize },
+		];
+		// draw block color
+		api.drawUtil({ 
+			type: 'path', 
 			c: block.color,
-			x: block.px * blockSize, 
-			y: block.py * blockSize + this.gameData.conf.headerSize, 
-			dx: blockSize, 
-			dy: blockSize
+			path: corners
+		});
+		// then light triangle shading on top
+		api.drawUtil({ 
+			type: 'path', 
+			c: conf.blockLightShade,
+			path: [ corners[3], corners[0], corners[1] ],
+		});
+		// then dark triangle shading on bottom
+		api.drawUtil({ 
+			type: 'path', 
+			c: conf.blockDarkShade,
+			path: [ corners[1], corners[2], corners[3] ],
 		});
 	}
 
-	this.renderHeader = (ctx, conf, color) => {
+	this.renderHeader = (api, conf, state, color) => {
 		// draw a different color background
-		this.gameApi.drawUtil({ 
+		api.drawUtil({ 
 			type: 'rect', 
 			c: color,
 			x: 0, 
 			y: 0, 
-			dx: conf.cols * conf.blockSize, 
-			dy: conf.headerSize
+			dx: conf.cols * conf.blockSize + 2 * conf.frameBorder, 
+			dy: conf.headerSize + conf.frameBorder
 		});
-		ctx.fillStyle = "white";
-		ctx.font = conf.headerFont;
-		ctx.fillText("Score: " + this.gameData.score, 10, conf.headerSize * 0.45);
-		ctx.fillText("Lines: " + this.gameData.lines, 10, conf.headerSize * 0.9);
-		if (this.gameData.gameOver) {
-  			ctx.fillText("G A M E  O V E R", conf.cols * conf.blockSize * 0.7, conf.headerSize * 0.9);
-		} else if (this.gameData.next) {
+		// score details
+		api.drawUtil({
+			type: 'text',
+			x: 10,
+			y: conf.headerSize * 0.45,
+			c: conf.textColor,
+			font: conf.headerFont,
+			text: 'Score: ' + state.score
+		});
+		api.drawUtil({
+			type: 'text',
+			x: 10,
+			y: conf.headerSize * 0.9,
+			c: conf.textColor,
+			font: conf.headerFont,
+			text: 'Lines: ' + state.lines
+		});
+		if (state.gameOver) {
+			api.drawUtil({
+				type: 'text',
+				x: conf.cols * conf.blockSize * 0.7,
+				y: conf.headerSize * 0.9,
+				c: conf.textColor,
+				font: conf.headerFont,
+				text: 'G A M E   O V E R'
+			});
+		} else if (state.next) {
 			const nextShape = {
+				...state.next,
 				orientation: 1, 
-				color: this.gameData.next.color, 
-				shape: this.gameData.next.shape,
 				px: conf.cols - 2,
 				py: -2
 			};
-			this.renderShape(ctx, nextShape, conf.blockSize);
-			ctx.fillStyle = "white";
-  			ctx.fillText("Next:", conf.cols * conf.blockSize * 0.7, conf.headerSize * 0.9);
+			this.renderShape(api, conf, nextShape, conf.blockSize);
+			api.drawUtil({
+				type: 'text',
+				x: conf.cols * conf.blockSize * 0.7,
+				y: conf.headerSize * 0.9,
+				c: conf.textColor,
+				font: conf.headerFont,
+				text: 'Next:'
+			});
 		}
 	}
 
-	this.renderBackground = (ctx, conf, color) => {
+	this.renderBackground = (api, conf, state) => {
 		// draw a different color background
-		this.gameApi.drawUtil({ 
+		api.drawUtil({ 
 			type: 'rect', 
-			c: color,
+			c: state.gameOver ? conf.gameOverColor : conf.gameColor,
 			x: 0, 
 			y: 0, 
-			dx: conf.cols * conf.blockSize, 
-			dy: conf.rows * conf.blockSize + conf.headerSize
+			dx: conf.cols * conf.blockSize + 2 * conf.frameBorder, 
+			dy: conf.rows * conf.blockSize + conf.headerSize + 2 * conf.frameBorder
 		});
 	}
 
@@ -590,18 +632,15 @@
 	 * Render each cycle
 	 */
 	this.renderLayer = (idx, count, data, ctx) => {
-		//console.log('rendering layer idx=', idx);
-		if (data.gameOver) {
-			this.renderBackground(ctx, data.conf, data.conf.gameOverColor);
-		} else {
-			this.renderBackground(ctx, data.conf, data.conf.gameColor);
-		}
-		this.renderHeader(ctx, data.conf, data.conf.headerColor);
-		// once locked, all shapes are saved as individual blocks, so renderBlock()
-		data.all.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
-		data.locked.forEach(d => this.renderBlock(ctx, d, data.conf.blockSize));
-		if (data.curr) {
-			this.renderShape(ctx, data.curr, data.conf.blockSize);
+		const api = this.gameApi;
+		const state = data.state;
+		const conf = data.conf;
+		this.renderBackground(api, conf, state);
+		this.renderHeader(api, conf, state, conf.headerColor);
+		state.all.forEach(d => this.renderBlock(api, conf, d, conf.blockSize));
+		state.locked.forEach(d => this.renderBlock(api, conf, d, conf.blockSize));
+		if (state.curr) {
+			this.renderShape(api, conf, state.curr, conf.blockSize);
 		}
 	}
 
