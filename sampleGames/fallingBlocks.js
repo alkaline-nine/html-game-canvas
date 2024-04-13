@@ -113,6 +113,7 @@
 		completeCount: 0,
 		curr: undefined,
 		next: undefined,
+		lines: 0,
 		score: 0
 	}
 
@@ -184,6 +185,7 @@
 	 */
 	this.resetGameOver = () => {
 		this.gameData.gameOver = false;
+		this.gameData.lines = 0;
 		this.gameData.score = 0;
 		this.gameData.curr = undefined;
 		this.gameData.next = undefined;
@@ -358,7 +360,7 @@
 	 * This will handle identifying any rows that are "complete" and ready to mark for removal
 	 */
 	this.checkCompleteLines = (data) => {
-		let linesComplete = 0;
+		let completeLines = 0;
 		// check each y row for complete, starting at the top, since rows above need to fall
 		for (py = 0; py < data.conf.rows; py++) {
 			console.log('checking complete for py =', py);
@@ -366,15 +368,18 @@
 			if (this.checkCompleteRow(data, py)) {
 				console.log('mark complete for py =', py);
 				this.markCompleteRow(data, py);
-				linesComplete++;
+				completeLines++;
 			}
 		};
-		if (linesComplete > 0) {
-			// 100 points per line
-			this.addScore(linesComplete * 100);
+		if (completeLines > 0) {
+			data.lines += completeLines;
+			// 250 points per line
+			this.addScore(completeLines * 250);
 			// plus bonus for 3 or 4
-			if (linesComplete > 2) {
-				this.addScore(1000 * (linesComplete - 2));
+			if (completeLines > 3) {
+				this.addScore(4000);
+			} else if (completeLines > 2) {
+				this.addScore(1250);
 			}
 		}
 	}
@@ -551,19 +556,21 @@
 		});
 		ctx.fillStyle = "white";
 		ctx.font = conf.headerFont;
-		ctx.fillText("Score: " + this.gameData.score, conf.cols * conf.blockSize * 0.7, conf.headerSize * 0.9);
+		ctx.fillText("Score: " + this.gameData.score, 10, conf.headerSize * 0.45);
+		ctx.fillText("Lines: " + this.gameData.lines, 10, conf.headerSize * 0.9);
 		if (this.gameData.gameOver) {
-  			ctx.fillText("G A M E  O V E R ! !", 10, conf.headerSize * 0.9);
+  			ctx.fillText("G A M E  O V E R", conf.cols * conf.blockSize * 0.7, conf.headerSize * 0.9);
 		} else if (this.gameData.next) {
-  			ctx.fillText("Next:", 10, conf.headerSize * 0.9);
 			const nextShape = {
 				orientation: 1, 
 				color: this.gameData.next.color, 
 				shape: this.gameData.next.shape,
-				px: 3,
+				px: conf.cols - 2,
 				py: -2
 			};
 			this.renderShape(ctx, nextShape, conf.blockSize);
+			ctx.fillStyle = "white";
+  			ctx.fillText("Next:", conf.cols * conf.blockSize * 0.7, conf.headerSize * 0.9);
 		}
 	}
 
