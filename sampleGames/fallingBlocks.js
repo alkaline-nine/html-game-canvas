@@ -56,6 +56,8 @@
 			blockDarkShade: 'rgba(0,0,0,0.1)',
 			blockLightShade: 'rgba(255,255,255,0.1)',
 			htmlControlSection: undefined,
+			isTouchDevice: false,
+			userAgent: 'UNKNOWN',
 			keys: {
 				keyEnter: 13,
 				keyEsc: 27,
@@ -64,6 +66,7 @@
 				keyUp: 38,
 				keyRight: 39,
 				keyDown: 40,
+				keyI: 73,
 			},
 			colors: [
 				'blue',
@@ -135,11 +138,13 @@
 		// ...add buttons to html control section for anyone with a touch screen
 		conf.htmlControlSection = document.getElementById('html_control_section');
 		if (conf.htmlControlSection) {
+			conf.userAgent = navigator.userAgent;
 			this.addControlButton(conf, conf.htmlControlSection, 'Pause/Restart', conf.keys.keyEnter, 'darkred', 'white');
 			this.addControlButton(conf, conf.htmlControlSection, 'Move Left', conf.keys.keyLeft, 'darkblue', 'white');
 			this.addControlButton(conf, conf.htmlControlSection, 'Rotate', conf.keys.keySpace, 'darkgreen', 'white');
 			this.addControlButton(conf, conf.htmlControlSection, 'Move Right', conf.keys.keyRight, 'darkblue', 'white');
 			this.addControlButton(conf, conf.htmlControlSection, 'Fast Fall', conf.keys.keyDown, 'darkred', 'white');
+			this.addControlCheckbox(conf, conf.htmlControlSection, 'Touchscreen?', conf.keys.keyI, 'black');
 		}
 	}
 
@@ -151,12 +156,83 @@
 		button.style.font = conf.controlFont;
 		button.style.color = textColor;
 		button.style.background = color;
-		button.addEventListener('click', () => { 
-			console.log(name + ' click!');
-			this.handleKeypress([key]);
-		});
+		// add event listeners for both touch and click
+		button.addEventListener('touchend', (event) => this.handleTouch(event, conf, name, key));
+		button.addEventListener('click', (event) => this.handleClick(event, conf, name, key));
 		parentDiv.appendChild(button);
 		console.log("Setup touch controls for " + name);
+	}
+
+	this.addControlCheckbox = (conf, parentDiv, name, key, textColor) => {
+		const checkboxId = 'checkbox_' + Date.now();
+		console.log("Setup controls for checkbox id=" + checkboxId);
+		// create checkbox input
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.name = name;
+		checkbox.id = checkboxId;
+		// auto-select checkbox when touch device
+		checkbox.checked = conf.isTouchDevice = this.isTouchUserAgent(conf);
+		checkbox.addEventListener('change', (event) => this.handleTouchCheckbox(event, conf, key));
+		// create label
+		const checkboxLabel = document.createElement('label');
+		checkboxLabel.htmlFor = checkboxId;
+		checkboxLabel.appendChild(document.createTextNode(name));
+		// add both
+		parentDiv.appendChild(document.createElement('br'));
+		parentDiv.appendChild(checkboxLabel);
+		parentDiv.appendChild(checkbox);
+		// and display user agent
+		// parentDiv.appendChild(document.createElement('br'));
+		// parentDiv.appendChild(document.createTextNode(conf.userAgent));
+		console.log("Setup touch controls for " + name);
+	}
+
+	this.isTouchUserAgent = (conf) => {
+		let agent = conf.userAgent || 'UNKNOWN';
+		console.log("DEBUG: navigator userAgent=", agent);
+		if (agent && agent.includes('Android')) {
+			agent = 'Android';
+		} else if (agent && agent.includes('iPhone')) {
+			agent = 'iPhone';
+		} else if (agent && agent.includes('iPad')) {
+			agent = 'iPad';
+		}
+		conf.userAgent = agent;
+		console.log("DEBUG: parsed userAgent=", agent);
+		const isTouchAgent = agent === 'iPhone' || agent === 'iPad' || agent === 'Android';
+		return isTouchAgent;
+	}
+
+	this.handleTouchCheckbox = (event, conf, key) => {
+		if (event.target && event.target.checked) {
+			console.log('setting isTouchDevice true');
+			conf.isTouchDevice = true;
+		} else {
+			console.log('setting isTouchDevice false');
+			conf.isTouchDevice = false;
+		}
+		event.preventDefault();
+	}
+
+	this.handleClick = (event, conf, name, key) => {
+		if (conf.isTouchDevice) {
+			console.log('IGNORING ' + name + ' click!');
+		} else {
+			console.log(name + ' click!');
+			this.handleKeypress([key]);
+			event.preventDefault();
+		}
+	}
+
+	this.handleTouch = (event, conf, name, key) => {
+		if (conf.isTouchDevice) {
+			console.log(name + ' touch!');
+			this.handleKeypress([key]);
+			event.preventDefault();
+		} else {
+			console.log('IGNORING ' + name + ' touch!');
+		}
 	}
 
 	/* 
@@ -338,7 +414,6 @@
 		if (state.completeCount > 0) {
 			// decrement until zero, then remove all rows pending removal and shift other blocks down
 			state.completeCount--;
-			console.log('decrement completeCount =', state.completeCount);
 			if (state.completeCount <= 0 && state.complete.length > 0) {
 				state.complete.forEach(py => this.handleCompleteRow(state, py));
 				state.complete = [];

@@ -17,7 +17,7 @@ function KeyInput(config) {
 		if (this.config.input.keys.length > 0) {
 			console.log('KeyInput: checking event for key=' + event.keyCode);
 			if (this.config.input.keys.some(k => k === event.keyCode)) {
-				console.log('KeyInput: handling key=' + event.keyCode);
+				//console.log('KeyInput: handling key=' + event.keyCode);
 				this.inputs.push(event.keyCode);
 				// since we handled this key, prevent any other handling
 				event.preventDefault();
@@ -29,7 +29,7 @@ function KeyInput(config) {
 		if (this.inputs.length > 0) {
 			const toReturn = this.inputs;
 			this.inputs = [];
-			console.log('KeyInput: returning inputs=' + JSON.stringify(toReturn));
+			//console.log('KeyInput: returning inputs=' + JSON.stringify(toReturn));
 			return toReturn;
 		}
 		// else none
