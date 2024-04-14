@@ -52,7 +52,7 @@
 			lockedColor: 'white',
 			headerColor: 'midnightblue',
 			headerFont: '16px sans-serif',
-			controlFont: '14px sans-serif',
+			controlFont: '24px sans-serif',
 			textColor: 'white',
 			blockDarkShade: 'rgba(0,0,0,0.1)',
 			blockLightShade: 'rgba(255,255,255,0.1)',
@@ -143,11 +143,20 @@
 		conf.htmlControlSection = document.getElementById('html_control_section');
 		if (conf.htmlControlSection) {
 			const buttonTable = this.addControlButtonTable(conf, conf.htmlControlSection);
-			this.addControlButton(conf, buttonTable, 'Pause/Start', conf.keys.keyEnter, 'darkred', 'white');
-			this.addControlButton(conf, buttonTable, 'Move Left', conf.keys.keyLeft, 'darkblue', 'white');
-			this.addControlButton(conf, buttonTable, 'Rotate', conf.keys.keySpace, 'darkgreen', 'white');
-			this.addControlButton(conf, buttonTable, 'Move Right', conf.keys.keyRight, 'darkblue', 'white');
-			this.addControlButton(conf, buttonTable, 'Fast Fall', conf.keys.keyDown, 'darkred', 'white');
+			/*
+			 * Could use directly copy/pasted symbols...
+			 * ... instead use unicode hex values
+			 * ... ⏯ '\u23EF'
+			 * ... ⇦ '\u21E6', ⬅ '\u2B05'
+			 * ... ⇪ '\u21EA', ⬆ '\u2B06', ⇧ '\u21E7', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
+			 * ... ⇨ '\u21E8', ⮕ '\u2B95'
+			 * ... ⇩ '\u21E9', ⬇ '\u2B07', ⇊ '\u21CA'
+			 */
+			this.addControlButton(conf, buttonTable, '\u23EF', conf.keys.keyEnter, 'darkred', 'white');
+			this.addControlButton(conf, buttonTable, '\u2B05', conf.keys.keyLeft, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, '\u21EA', conf.keys.keySpace, 'darkgreen', 'white');
+			this.addControlButton(conf, buttonTable, '\u2B95', conf.keys.keyRight, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, '\u2B07', conf.keys.keyDown, 'darkred', 'white');
 			this.addControlCheckbox(conf, conf.htmlControlSection, 'Touchscreen?', conf.keys.keyI, 'black');
 		}
 	}
