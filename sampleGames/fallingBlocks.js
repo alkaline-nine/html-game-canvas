@@ -52,7 +52,7 @@
 			lockedColor: 'white',
 			headerColor: 'midnightblue',
 			headerFont: '16px sans-serif',
-			controlFont: '24px sans-serif',
+			controlFont: '32px arial, sans-serif',
 			textColor: 'white',
 			blockDarkShade: 'rgba(0,0,0,0.1)',
 			blockLightShade: 'rgba(255,255,255,0.1)',
@@ -146,17 +146,17 @@
 			/*
 			 * Could use directly copy/pasted symbols...
 			 * ... instead use unicode hex values
-			 * ... ⏯ '\u23EF'
-			 * ... ⇦ '\u21E6', ⬅ '\u2B05'
-			 * ... ⇪ '\u21EA', ⬆ '\u2B06', ⇧ '\u21E7', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
-			 * ... ⇨ '\u21E8', ⮕ '\u2B95'
-			 * ... ⇩ '\u21E9', ⬇ '\u2B07', ⇊ '\u21CA'
+			 * ... ⏯ '\u23EF', ⏸ '\u23F8'
+			 * ... ⇦ '\u21E6',               ⬅ '\u2B05',               ⇠ '\u21E0'
+			 * ... ⇧ '\u21E7' or ⇪ '\u21EA', ⬆ '\u2B06',               ⇡ '\u21E1', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
+			 * ... ⇨ '\u21E8',               ➡ '\u27A1' or ⮕ '\u2B95', ⇢ '\u21E2'
+			 * ... ⇩ '\u21E9',               ⬇ '\u2B07',               ⇣ '\u21E3'
 			 */
-			this.addControlButton(conf, buttonTable, '\u23EF', conf.keys.keyEnter, 'darkred', 'white');
-			this.addControlButton(conf, buttonTable, '\u2B05', conf.keys.keyLeft, 'darkblue', 'white');
-			this.addControlButton(conf, buttonTable, '\u21EA', conf.keys.keySpace, 'darkgreen', 'white');
-			this.addControlButton(conf, buttonTable, '\u2B95', conf.keys.keyRight, 'darkblue', 'white');
-			this.addControlButton(conf, buttonTable, '\u2B07', conf.keys.keyDown, 'darkred', 'white');
+			this.addControlButton(conf, buttonTable, '\u23F8', conf.keys.keyEnter, 'darkred', 'white');
+			this.addControlButton(conf, buttonTable, '\u21E6', conf.keys.keyLeft, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, '\u21E7', conf.keys.keySpace, 'darkgreen', 'white');
+			this.addControlButton(conf, buttonTable, '\u21E8', conf.keys.keyRight, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, '\u21E9', conf.keys.keyDown, 'darkred', 'white');
 			this.addControlCheckbox(conf, conf.htmlControlSection, 'Touchscreen?', conf.keys.keyI, 'black');
 		}
 	}
