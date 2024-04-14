@@ -41,6 +41,7 @@
 			rows: 20,
 			blockSize: 33,
 			headerSize: 70,
+			buttonSize: 60,
 			frameBorder: 5,
 			timer: 40,
 			completeTimer: 25,
@@ -135,24 +136,40 @@
 		// ...and a callback function that will fire every cycle for new input
 		api.inputCallback(this.handleKeypress);
 		console.log("Setup keyboard controls for game canvas engine = " + JSON.stringify(api.config().input.keys));
+		// determine if this should default to touch type input
+		conf.userAgent = navigator.userAgent;
+		conf.isTouchDevice = this.isTouchUserAgent(conf);
 		// ...add buttons to html control section for anyone with a touch screen
 		conf.htmlControlSection = document.getElementById('html_control_section');
 		if (conf.htmlControlSection) {
-			conf.userAgent = navigator.userAgent;
-			this.addControlButton(conf, conf.htmlControlSection, 'Pause/Restart', conf.keys.keyEnter, 'darkred', 'white');
-			this.addControlButton(conf, conf.htmlControlSection, 'Move Left', conf.keys.keyLeft, 'darkblue', 'white');
-			this.addControlButton(conf, conf.htmlControlSection, 'Rotate', conf.keys.keySpace, 'darkgreen', 'white');
-			this.addControlButton(conf, conf.htmlControlSection, 'Move Right', conf.keys.keyRight, 'darkblue', 'white');
-			this.addControlButton(conf, conf.htmlControlSection, 'Fast Fall', conf.keys.keyDown, 'darkred', 'white');
+			const buttonTable = this.addControlButtonTable(conf, conf.htmlControlSection);
+			this.addControlButton(conf, buttonTable, 'Pause/Start', conf.keys.keyEnter, 'darkred', 'white');
+			this.addControlButton(conf, buttonTable, 'Move Left', conf.keys.keyLeft, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, 'Rotate', conf.keys.keySpace, 'darkgreen', 'white');
+			this.addControlButton(conf, buttonTable, 'Move Right', conf.keys.keyRight, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, 'Fast Fall', conf.keys.keyDown, 'darkred', 'white');
 			this.addControlCheckbox(conf, conf.htmlControlSection, 'Touchscreen?', conf.keys.keyI, 'black');
 		}
 	}
 
+	this.addControlButtonTable = (conf, parentDiv) => {
+		const buttonTable = document.createElement('div');
+		const fullWidth = conf.cols * conf.blockSize + conf.frameBorder * 2;
+		buttonTable.style.width = '' + fullWidth + 'px';
+		buttonTable.style.textAlign = 'center';
+		buttonTable.style.display = 'table';
+		parentDiv.appendChild(buttonTable);
+		return buttonTable;
+	}
+
 	this.addControlButton = (conf, parentDiv, name, key, color, textColor, font) => {
-		const button = document.createElement('button');
+		const button = document.createElement('div');
 		button.innerHTML = name;
-		button.style.margin = '8px';
-		button.style.height = '36px';
+		button.style.height = '' + conf.buttonSize + 'px';
+		button.style.width = '' + conf.buttonSize + 'px';
+		button.style.display = 'table-cell';
+		button.style.textAlign = 'center';
+		button.style.verticalAlign = 'middle';
 		button.style.font = conf.controlFont;
 		button.style.color = textColor;
 		button.style.background = color;
@@ -161,6 +178,7 @@
 		button.addEventListener('click', (event) => this.handleClick(event, conf, name, key));
 		parentDiv.appendChild(button);
 		console.log("Setup touch controls for " + name);
+		return button;
 	}
 
 	this.addControlCheckbox = (conf, parentDiv, name, key, textColor) => {
@@ -172,7 +190,7 @@
 		checkbox.name = name;
 		checkbox.id = checkboxId;
 		// auto-select checkbox when touch device
-		checkbox.checked = conf.isTouchDevice = this.isTouchUserAgent(conf);
+		checkbox.checked = conf.isTouchDevice;
 		checkbox.addEventListener('change', (event) => this.handleTouchCheckbox(event, conf, key));
 		// create label
 		const checkboxLabel = document.createElement('label');
@@ -182,10 +200,8 @@
 		parentDiv.appendChild(document.createElement('br'));
 		parentDiv.appendChild(checkboxLabel);
 		parentDiv.appendChild(checkbox);
-		// and display user agent
-		// parentDiv.appendChild(document.createElement('br'));
-		// parentDiv.appendChild(document.createTextNode(conf.userAgent));
-		console.log("Setup touch controls for " + name);
+		console.log("Setup controls for checkbox name=" + name);
+		return checkbox;
 	}
 
 	this.isTouchUserAgent = (conf) => {
