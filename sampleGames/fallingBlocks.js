@@ -26,6 +26,7 @@
 		state: {
 			active: true,
 			gameOver: false,
+			pauseMenu: undefined,
 			keysPressed: [],
 			all: [],
 			locked: [],
@@ -57,6 +58,22 @@
 			blockDarkShade: 'rgba(0,0,0,0.1)',
 			blockLightShade: 'rgba(255,255,255,0.1)',
 			htmlControlSection: undefined,
+			pauseButton: undefined,
+			/*
+			 * Could use directly copy/pasted symbols...
+			 * ... instead use unicode hex values
+			 * ... ⏯ '\u23EF', ⏸ '\u23F8'
+			 * ... ⇦ '\u21E6',               ⬅ '\u2B05',               ⇠ '\u21E0'
+			 * ... ⇧ '\u21E7' or ⇪ '\u21EA', ⬆ '\u2B06',               ⇡ '\u21E1', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
+			 * ... ⇨ '\u21E8',               ➡ '\u27A1' or ⮕ '\u2B95', ⇢ '\u21E2'
+			 * ... ⇩ '\u21E9',               ⬇ '\u2B07',               ⇣ '\u21E3'
+			 */
+			pauseText: '\u23F8',
+			restartText: '\u23F5',
+			moveRightText: '\u21E8',
+			moveLeftText: '\u21E6',
+			rotateText: '\u21E7',
+			fallFastText: '\u21E9',
 			isTouchDevice: false,
 			userAgent: 'UNKNOWN',
 			keys: {
@@ -143,20 +160,11 @@
 		conf.htmlControlSection = document.getElementById('html_control_section');
 		if (conf.htmlControlSection) {
 			const buttonTable = this.addControlButtonTable(conf, conf.htmlControlSection);
-			/*
-			 * Could use directly copy/pasted symbols...
-			 * ... instead use unicode hex values
-			 * ... ⏯ '\u23EF', ⏸ '\u23F8'
-			 * ... ⇦ '\u21E6',               ⬅ '\u2B05',               ⇠ '\u21E0'
-			 * ... ⇧ '\u21E7' or ⇪ '\u21EA', ⬆ '\u2B06',               ⇡ '\u21E1', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
-			 * ... ⇨ '\u21E8',               ➡ '\u27A1' or ⮕ '\u2B95', ⇢ '\u21E2'
-			 * ... ⇩ '\u21E9',               ⬇ '\u2B07',               ⇣ '\u21E3'
-			 */
-			this.addControlButton(conf, buttonTable, '\u23F8', conf.keys.keyEnter, 'darkred', 'white');
-			this.addControlButton(conf, buttonTable, '\u21E6', conf.keys.keyLeft, 'darkblue', 'white');
-			this.addControlButton(conf, buttonTable, '\u21E7', conf.keys.keySpace, 'darkgreen', 'white');
-			this.addControlButton(conf, buttonTable, '\u21E8', conf.keys.keyRight, 'darkblue', 'white');
-			this.addControlButton(conf, buttonTable, '\u21E9', conf.keys.keyDown, 'darkred', 'white');
+			conf.pauseButton = this.addControlButton(conf, buttonTable, conf.pauseText, conf.keys.keyEnter, 'darkred', 'white');
+			this.addControlButton(conf, buttonTable, conf.moveLeftText, conf.keys.keyLeft, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, conf.rotateText, conf.keys.keySpace, 'darkgreen', 'white');
+			this.addControlButton(conf, buttonTable, conf.moveRightText, conf.keys.keyRight, 'darkblue', 'white');
+			this.addControlButton(conf, buttonTable, conf.fallFastText, conf.keys.keyDown, 'darkred', 'white');
 			this.addControlCheckbox(conf, conf.htmlControlSection, 'Touchscreen?', conf.keys.keyI, 'black');
 		}
 	}
@@ -294,6 +302,24 @@
 		state.completeCount = 0;
 	}
 
+	this.openPauseMenu = (conf, state, message) => {
+		state.pauseMenu = {
+			text: message
+		};
+		if (conf.pauseButton) {
+			// flip the button control to indicate restart function
+			conf.pauseButton.innerHTML = conf.restartText;
+		}
+	}
+
+	this.closePauseMenu = (conf, state) => {
+		state.pauseMenu = undefined;
+		if (conf.pauseButton) {
+			// flip the button control to indicate pause function
+			conf.pauseButton.innerHTML = conf.pauseText;
+		}
+	}
+
 	/*
 	 * Handle inputCallback to start/stop, or push to keysPressed for think time handling
 	 */
@@ -304,10 +330,10 @@
 		const keypress = keys.at(0) || -1;
 		if (keypress === conf.keys.keyEsc) {
 			// stop
-			this.handleStartStop(api, state, true);
+			this.handleStartStop(api, conf, state, true);
 		} else if (keypress === conf.keys.keyEnter) {
 			// toggle active
-			this.handleStartStop(api, state, state.active);
+			this.handleStartStop(api, conf, state, state.active);
 		} else {
 			state.keysPressed.push(keypress);
 		}
@@ -316,12 +342,13 @@
 	/*
 	 * This will either stop or start the game, resetting gameOver when restarting
 	 */
-	this.handleStartStop = (api, state, stop) => {
+	this.handleStartStop = (api, conf, state, stop) => {
 		// start or pause
 		if (stop) {
-			state.active = false;
-			api.stopGame();
+			const pauseText = state.gameOver ? 'G A M E   O V E R' : 'P A U S E D';
+			this.openPauseMenu(conf, state, pauseText);
 		} else {
+			this.closePauseMenu(conf, state);
 			if (state.gameOver) {
 				this.resetGameOver(state);
 			}
@@ -375,10 +402,15 @@
 		const api = this.gameApi;
 		const state = data.state;
 		const conf = data.conf;
-		// stop game engine when gameover
-		if (state.gameOver) {
+		// handle pause, and stop game engine when gameover
+		if (state.pauseMenu) {
+			// stop game cycle
 			state.active = false;
 			api.stopGame();
+			return;
+		} else if (state.gameOver) {
+			// begin the stopping process
+			this.handleStartStop(api, conf, state, true);
 			return;
 		}
 		// check pending keypress, handle all, then clear
@@ -688,14 +720,14 @@
 			font: conf.headerFont,
 			text: 'Lines: ' + state.lines
 		});
-		if (state.gameOver) {
+		if (state.pauseMenu) {
 			api.drawUtil({
 				type: 'text',
 				x: conf.cols * conf.blockSize * 0.7,
 				y: conf.headerSize * 0.9,
 				c: conf.textColor,
 				font: conf.headerFont,
-				text: 'G A M E   O V E R'
+				text: state.pauseMenu.text
 			});
 		} else if (state.next) {
 			const nextShape = {
