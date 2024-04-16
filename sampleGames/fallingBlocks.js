@@ -62,18 +62,20 @@
 			/*
 			 * Could use directly copy/pasted symbols...
 			 * ... instead use unicode hex values
-			 * ... ⏯ '\u23EF', ⏸ '\u23F8'
-			 * ... ⇦ '\u21E6',               ⬅ '\u2B05',               ⇠ '\u21E0'
-			 * ... ⇧ '\u21E7' or ⇪ '\u21EA', ⬆ '\u2B06',               ⇡ '\u21E1', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
-			 * ... ⇨ '\u21E8',               ➡ '\u27A1' or ⮕ '\u2B95', ⇢ '\u21E2'
-			 * ... ⇩ '\u21E9',               ⬇ '\u2B07',               ⇣ '\u21E3'
+			 * ... ⏸ '\u23F8', ⏵︎ '\u23F5', ⏯ '\u23EF'
+			 * ... ⇦ '\u21E6',
+			 * ... ⇧ '\u21E7', ⇪ '\u21EA', ⤾ '\u293E', ↻ '\u21BB', ⟳ '\u27F3', ↩ '\u21A9'
+			 * ... ⇨ '\u21E8'
+			 * ... ⇩ '\u21E9'
+			 * Shout out to Anne @aniel928 for helping with the "emoji" issue in some browsers
+			 * ... append '\uFE0E' to hint VS15 version instead of letting the browser guess
 			 */
-			pauseText: '\u23F8',
-			restartText: '\u23F5',
-			moveRightText: '\u21E8',
-			moveLeftText: '\u21E6',
-			rotateText: '\u21E7',
-			fallFastText: '\u21E9',
+			pauseText: '\u23F8\uFE0E',
+			restartText: '\u23F5\uFE0E',
+			moveLeftText: '\u21E6\uFE0E',
+			rotateText: '\u21E7\uFE0E',
+			moveRightText: '\u21E8\uFE0E',
+			fallFastText: '\u21E9\uFE0E',
 			isTouchDevice: false,
 			userAgent: 'UNKNOWN',
 			keys: {
