@@ -53,6 +53,10 @@ function Layers(config) {
 		this.data.push(layerToAdd);
 	}
 
+	this.removeAllLayers = () => {
+		this.data = [];
+	}
+
 	this.removeLayer = (idx) => {
 		const toRemove = this.data.at(idx);
 		if (toRemove) {

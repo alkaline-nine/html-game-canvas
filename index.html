@@ -4,14 +4,29 @@
 		<meta charset="utf-8"/>
 		<title>HTML Game Canvas</title>
 
-		<!-- Include the JS for the static sample game using the game engine -->
+		<!-- Include the JS for the games using the game engine -->
+		<script type="text/javascript" src="static/sampleGame.js"></script>
 		<script type="text/javascript" src="static/fallingBlocks.js"></script>
+		<script type="text/javascript" src="static/sideScroller.js"></script>
 
 		<!-- webpack will inject game engine JS here -->
 	</head>
 	<body>
 		<div class="container">
 			<center>
+				<!-- because there are multiple samples, add buttons at the top to switch -->
+				<div id="games_control_section" class="container-fluid" style="width: 100%; display: table-row; text-align: center; color: white">
+					<div onclick="switchGame('sampleGame')" 
+						style="background: red; height: 30px; width: 180px; display: table-cell; text-align: center; vertical-align: middle;"
+						>Original Sample</div>
+					<div onclick="switchGame('fallingBlocks')" 
+						style="background: blue; height: 30px; width: 180px; display: table-cell; text-align: center; vertical-align: middle;"
+						>Falling Blocks</div>
+					<div onclick="switchGame('sideScroller')" 
+						style="background: green; height: 30px; width: 180px; display: table-cell; text-align: center; vertical-align: middle;"
+						>Side Scroller</div>
+				</div>
+				<hr width="600px"/>
 				<!-- canvas to draw on, the id must match to be found by framework -->
 				<canvas id="html_game_canvas">Placeholder for canvas</canvas>
 				<div id="html_control_section"></div>
@@ -19,11 +34,22 @@
 		</div>
 		<script type="text/javascript">
 			/* 
-			 * Placeholder for the sample game and game API objects initialized on load
+			 * Placeholder for the sample games and game API objects initialized on load
 			 */
 			let gameApi = undefined;
-			let game = undefined;
-
+			let games = {};
+			const switchGame = (gameName) => {
+				gameApi.resetGame();
+				let nextGame = games[gameName];
+				if (nextGame) {
+					console.log('switching to ' + gameName);
+					nextGame.init(gameApi);
+					// start the canvas engine
+					gameApi.startGame();
+				} else {
+					console.log('failed to switch to ' + gameName);
+				}
+			}
 			/*
 			 * On load, configure our gameCanvas and start
 			 */
@@ -31,11 +57,15 @@
 				if (window.gameCanvas) {
 					// the api is all that is needed to config/run
 					gameApi = window.gameCanvas.api;
-					// init the game with the gameApi
-					game = window.fallingBlocks;
-					game.init(gameApi);
-					// start the canvas engine
-					gameApi.startGame();
+
+					// init all games
+					games.sampleGame = window.sampleGame;
+					games.fallingBlocks = window.fallingBlocks;
+					games.sideScroller = window.sideScroller;
+					console.log('added all games')
+
+					// start whichever game you want
+					switchGame('fallingBlocks');
 					console.log("Started html game canvas engine");
 				} else {
 					console.log("Failed to load html game canvas engine");
@@ -44,4 +74,3 @@
 		</script>
 	</body>
 </html>
-

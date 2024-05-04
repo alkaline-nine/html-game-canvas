@@ -22,6 +22,8 @@ var gameCanvas = {
 		utils: undefined,
 	},
 	api: {
+		// reset all configured layers, keys, callbacks, and stop
+		resetGame: () => { return gameCanvas.core.game.resetGame(); },
 		// game engine (think,render,increment,repeat) can be started/stopped
 		startGame: () => { return gameCanvas.core.game.startGame(); },
 		stopGame: () => { return gameCanvas.core.game.stopGame(); },

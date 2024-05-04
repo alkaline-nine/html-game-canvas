@@ -4,6 +4,13 @@ function Gamer(config, keyinput, layers, canvas) {
 	this.layers = layers;
 	this.canvas = canvas;
 
+	this.resetGame = () => {
+		this.stopGame();
+		this.layers.removeAllLayers();
+		this.keyinput.setKeys([]);
+		this.keyinput.setCallback(null);
+	}
+
 	this.startGame = () => {
 		// set active and begin
 		console.log('Gamer: HTML Game Canvas started!');
