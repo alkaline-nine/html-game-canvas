@@ -49,8 +49,8 @@
 				conf: {
 					width: 720,
 					height: 480,
-					stepMomentum: 8, // moving left or right, this many pixels per cycle
-					stepFastMod: 30, // sprinting left or right, bumped to this many pixels, but decreased per cycle
+					stepMomentum: 3, // moving left or right, this many pixels per cycle
+					stepFastMod: 27, // sprinting left or right, bumped to this many pixels, but decreased per cycle
 					jumpMomentum: 40, // total cycles start to finish for a single jump
 					jumpFastRise: 31, // countdown to this will rise fast
 					jumpTop: 22, // countdown to this will rise slow
@@ -61,7 +61,7 @@
 					playerInnerRadius: 38, // inner eyeball average radius
 					playerInnerEyeRadius: 21, // inner eyeball average radius
 					playerPulse: 5, // pixels to fluctuate from
-					rollFactor: 1.25, // this divides 360 degrees to calc roll vector compared to horizontal movement in pixes
+					rollFactor: 4, // this divides 360 degrees to calc roll vector compared to horizontal movement in pixes
 					htmlControlSection: undefined,
 					pauseButton: undefined,
 					headerSize: 70,
@@ -155,7 +155,7 @@
 						},
 						{
 							total: 40,
-							scale: 0.95,
+							scale: 0.9,
 							sizeX: 15,
 							sizeY: 60,
 							bgColor: undefined,
@@ -164,7 +164,7 @@
 						},
 						{
 							total: 6,
-							scale: 1.2,
+							scale: 1.0,
 							sizeX: 60,
 							sizeY: 2,
 							bgColor: 'black',
@@ -172,6 +172,15 @@
 							bgSizeY: 30 + 4, /* 2*frameBorder=4 */
 							objColor: 'white',
 							objType: 'road',
+						},
+						{
+							total: 10,
+							scale: 1.0,
+							sizeX: 15,
+							sizeY: 50,
+							bgColor: undefined,
+							objColor: 'random',
+							objType: 'flower',
 						},
 					],
 				},
@@ -374,6 +383,11 @@
 					// y = y % (conf.height / 3.0) + 2.0 * conf.height / 3.0;
 					// use layerConf y value
 					y = conf.height - api.random(2 * layerConf.sizeY);
+				} else if (layerConf.objType === 'flower') {
+					// y should be bottom 1/3
+					// y = y % (conf.height / 3.0) + 2.0 * conf.height / 3.0;
+					// use layerConf y value
+					y = conf.height - api.random(layerConf.sizeY) - layerConf.sizeY;
 				} else if (layerConf.objType === 'road') {
 					// y should be bottom 1/10 of screen
 					// y = 9.0 * conf.height / 10.0;
@@ -399,11 +413,17 @@
 						objColor,
 						x,
 						y,
+						rotate: this.randomRotateRadians(api),
 					};
 					console.log('Generate obj=', obj);
 					objs.push(obj);
 				}
 				return objs;
+			}
+
+			this.randomRotateRadians = (api) => {
+				const rand360 = api.random(77777777) % 360;
+				return Math.PI * rand360 / 180.0;
 			}
 
 			this.randomEyeColor = (api, conf) => {
@@ -765,6 +785,55 @@
 				});
 			}
 
+			this.renderFlower = (api, conf, x, y, rotate, scale, sizeX, sizeY, color) => {
+				const bottomY = conf.headerSize + conf.frameBorder + conf.height;
+				const r = (bottomY - y) / 2;
+				const hr = r * 0.33;
+				const pr = r * 0.4;
+				const ppr = pr * 0.79;
+				if (r <= 0) return; 
+				// draw stem
+				api.drawUtil({ 
+					type: 'path', 
+					c: color,
+					path: [
+						{ x: x + hr - 1, y: bottomY },
+						{ x: x + hr - 4, y: y },
+						{ x: x + hr + 4, y: y },
+						{ x: x + hr + 1, y: bottomY },
+					],
+				});
+				// then draw multiple petals
+				const fifthRadians = Math.PI * 0.4;
+				const xyMods = [ 
+					{ x: Math.sin(fifthRadians + rotate), y: Math.cos(fifthRadians + rotate) },
+					{ x: Math.sin(fifthRadians * 2 + rotate), y: Math.cos(fifthRadians * 2 + rotate) },
+					{ x: Math.sin(fifthRadians * 3 + rotate), y: Math.cos(fifthRadians * 3 + rotate) },
+					{ x: Math.sin(fifthRadians * 4 + rotate), y: Math.cos(fifthRadians * 4 + rotate) },
+					{ x: Math.sin(fifthRadians * 5 + rotate), y: Math.cos(fifthRadians * 5 + rotate) },
+				];
+				xyMods.forEach((mod) => {
+					api.drawUtil({
+						type: 'ellipse', 
+						c: 'white',
+						x: x + pr * mod.x,
+						y: y + pr * mod.y,
+						mx: pr,
+						my: pr,
+					});
+				});
+				xyMods.forEach((mod) => {
+					api.drawUtil({
+						type: 'ellipse', 
+						c: color,
+						x: x + pr * mod.x,
+						y: y + pr * mod.y,
+						mx: ppr,
+						my: ppr,
+					});
+				});
+			}
+
 			this.renderMountain = (api, conf, x, y, scale, sizeX, sizeY, color) => {
 				const bottomY = conf.headerSize + conf.frameBorder + conf.height;
 				const path = [
@@ -807,6 +876,10 @@
 					case 'tree':
 						this.renderTree(api, conf, x, y, layer.scale, layer.sizeX, layer.sizeY, obj.objColor);
 						this.renderTree(api, conf, redrawX, y, layer.scale, layer.sizeX, layer.sizeY, obj.objColor);
+						break;
+					case 'flower':
+						this.renderFlower(api, conf, x, y, obj.rotate, layer.scale, layer.sizeX, layer.sizeY, obj.objColor);
+						this.renderFlower(api, conf, redrawX, y, obj.rotate, layer.scale, layer.sizeX, layer.sizeY, obj.objColor);
 						break;
 					case 'road':
 						this.renderRoad(api, conf, x, y, layer.scale, layer.sizeX, layer.sizeY, obj.objColor);

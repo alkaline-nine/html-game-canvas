@@ -18,6 +18,9 @@ function Utils(canvas, config) {
 			case 'ellipse':
 				this.drawEllipse(opts);
 				break;
+			case 'arc':
+				this.drawArc(opts);
+				break;
 			case 'path':
 				this.drawPath(opts);
 				break;
@@ -64,6 +67,24 @@ function Utils(canvas, config) {
 			Math.PI * 2);
 		this.ctx.closePath();
 		this.ctx.fill();
+	}
+
+	/* Requires { x, y, r, a1, a2, fill | stroke } */
+	this.drawArc = (opts) => {
+		this.ctx.beginPath();
+		this.ctx.arc( //
+			opts.x + opts.r, //
+			opts.y + opts.r, //
+			opts.r, //
+			opts.a1, //
+			opts.a2, //
+			false);
+		this.ctx.closePath();
+		if (opts.fill) {
+			this.ctx.fill();
+		} else {
+			this.ctx.stroke();
+		}
 	}
 
 	/* Requires { path: [ { x, y } ] } */
